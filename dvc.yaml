@@ -1,0 +1,64 @@
+stages:
+  load_fdb:
+    cmd: python src/load_fdb.py
+    deps:
+      - src/load_fdb.py
+    outs:
+      - data/raw/sparkov.csv
+
+  combine:
+    cmd: python src/combine_datasets.py
+    deps:
+      - src/combine_datasets.py
+      - data/raw/paysim.csv
+      - data/raw/sparkov.csv
+    params:
+      - combine
+    outs:
+      - data/processed/combined_transactions.csv
+
+  preprocess:
+    cmd: python src/preprocess.py
+    deps:
+      - src/preprocess.py
+      - data/processed/combined_transactions.csv
+    params:
+      - preprocess
+    outs:
+      - data/processed/features.csv
+
+  train:
+    cmd: python src/train.py
+    deps:
+      - src/train.py
+      - data/processed/features.csv
+    params:
+      - train
+    outs:
+      - models/fraud_model.pkl
+
+  evaluate:
+    cmd: python src/evaluate.py
+    deps:
+      - src/evaluate.py
+      - models/fraud_model.pkl
+      - data/processed/features.csv
+    params:
+      - evaluate
+    metrics:
+      - metrics/scores.json:
+          cache: false
+    plots:
+      - reports/confusion_matrix.png
+      - reports/roc_curve.png
+
+  benchmark_fdb:
+    cmd: python src/benchmark_fdb.py
+    deps:
+      - src/benchmark_fdb.py
+      - models/fraud_model.pkl
+    params:
+      - benchmark
+    metrics:
+      - metrics/fdb_benchmark.json:
+          cache: false
