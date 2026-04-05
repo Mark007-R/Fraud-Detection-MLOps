@@ -1,13 +1,13 @@
 stages:
   load_fdb:
-    cmd: python src/load_fdb.py
+    cmd: .venv\Scripts\python.exe src/load_fdb.py
     deps:
       - src/load_fdb.py
     outs:
       - data/raw/sparkov.csv
 
   combine:
-    cmd: python src/combine_datasets.py
+    cmd: .venv\Scripts\python.exe src/combine_datasets.py
     deps:
       - src/combine_datasets.py
       - data/raw/paysim.csv
@@ -18,7 +18,7 @@ stages:
       - data/processed/combined_transactions.csv
 
   preprocess:
-    cmd: python src/preprocess.py
+    cmd: .venv\Scripts\python.exe src/preprocess.py
     deps:
       - src/preprocess.py
       - data/processed/combined_transactions.csv
@@ -28,7 +28,7 @@ stages:
       - data/processed/features.csv
 
   train:
-    cmd: python src/train.py
+    cmd: .venv\Scripts\python.exe src/train.py
     deps:
       - src/train.py
       - data/processed/features.csv
@@ -38,7 +38,7 @@ stages:
       - models/fraud_model.pkl
 
   evaluate:
-    cmd: python src/evaluate.py
+    cmd: .venv\Scripts\python.exe src/evaluate.py
     deps:
       - src/evaluate.py
       - models/fraud_model.pkl
@@ -49,11 +49,11 @@ stages:
       - metrics/scores.json:
           cache: false
     plots:
-      - reports/confusion_matrix.png
-      - reports/roc_curve.png
+      - reports/confusion_matrix.svg
+      - reports/roc_curve.svg
 
   benchmark_fdb:
-    cmd: python src/benchmark_fdb.py
+    cmd: .venv\Scripts\python.exe -m src.benchmark_fdb
     deps:
       - src/benchmark_fdb.py
       - models/fraud_model.pkl

@@ -1,2 +1,145 @@
 schema: '2.0'
-stages: {}
+stages:
+  load_fdb:
+    cmd: .venv\Scripts\python.exe src/load_fdb.py
+    deps:
+    - path: src/load_fdb.py
+      hash: md5
+      md5: 071d208601f8be6a8eb22d2011697f30
+      size: 4852
+    outs:
+    - path: data/raw/sparkov.csv
+      hash: md5
+      md5: 3f43d5a6aab3b5d0b5bc2676e3626496
+      size: 347981313
+  combine:
+    cmd: .venv\Scripts\python.exe src/combine_datasets.py
+    deps:
+    - path: data/raw/paysim.csv
+      hash: md5
+      md5: e92a5f7447f43712f1dca473d0b0fa85
+      size: 493534783
+    - path: data/raw/sparkov.csv
+      hash: md5
+      md5: 3f43d5a6aab3b5d0b5bc2676e3626496
+      size: 347981313
+    - path: src/combine_datasets.py
+      hash: md5
+      md5: d140106f41317873e30825e6dac7ec90
+      size: 5770
+    params:
+      params.yaml:
+        combine:
+          paysim_path: data/raw/paysim.csv
+          sparkov_path: data/raw/sparkov.csv
+          output_path: data/processed/combined_transactions.csv
+    outs:
+    - path: data/processed/combined_transactions.csv
+      hash: md5
+      md5: df13f1afe13e868571868bfdc0163b5c
+      size: 400995390
+  preprocess:
+    cmd: .venv\Scripts\python.exe src/preprocess.py
+    deps:
+    - path: data/processed/combined_transactions.csv
+      hash: md5
+      md5: df13f1afe13e868571868bfdc0163b5c
+      size: 400995390
+    - path: src/preprocess.py
+      hash: md5
+      md5: ea269a99873930b34f423186d6056d17
+      size: 6854
+    params:
+      params.yaml:
+        preprocess:
+          input: data/processed/combined_transactions.csv
+          output: data/processed/features.csv
+          chunk_size: 100000
+    outs:
+    - path: data/processed/features.csv
+      hash: md5
+      md5: 10dc68d489cf1975392ec2272d11e941
+      size: 1532739766
+  train:
+    cmd: .venv\Scripts\python.exe src/train.py
+    deps:
+    - path: data/processed/features.csv
+      hash: md5
+      md5: 10dc68d489cf1975392ec2272d11e941
+      size: 1532739766
+    - path: src/train.py
+      hash: md5
+      md5: 8a7ad79a15a177918aa1e0fe125c580c
+      size: 3659
+    params:
+      params.yaml:
+        train:
+          model_type: xgboost
+          test_size: 0.2
+          random_state: 42
+          n_estimators: 200
+          max_depth: 6
+          learning_rate: 0.1
+          scale_pos_weight: 50
+          use_smote: false
+    outs:
+    - path: models/fraud_model.pkl
+      hash: md5
+      md5: 1346c7d7474cca4d1c8ba8eed5b674fa
+      size: 675622
+  evaluate:
+    cmd: .venv\Scripts\python.exe src/evaluate.py
+    deps:
+    - path: data/processed/features.csv
+      hash: md5
+      md5: 10dc68d489cf1975392ec2272d11e941
+      size: 1532739766
+    - path: models/fraud_model.pkl
+      hash: md5
+      md5: 1346c7d7474cca4d1c8ba8eed5b674fa
+      size: 675622
+    - path: src/evaluate.py
+      hash: md5
+      md5: db13d8a24397f09d8dce4266657aa0d4
+      size: 6991
+    params:
+      params.yaml:
+        evaluate:
+          model_path: models/fraud_model.pkl
+          metrics_path: metrics/scores.json
+          reports_dir: reports/
+    outs:
+    - path: metrics/scores.json
+      hash: md5
+      md5: 11405fe4787d5f3b38df843f90d4eeeb
+      size: 221
+    - path: reports/confusion_matrix.svg
+      hash: md5
+      md5: 8557f84c12b17934388b9c2a0546d214
+      size: 1745
+    - path: reports/roc_curve.svg
+      hash: md5
+      md5: 25719a0a97d8aae231723d26d8bf1a26
+      size: 2421320
+  benchmark_fdb:
+    cmd: .venv\Scripts\python.exe -m src.benchmark_fdb
+    deps:
+    - path: models/fraud_model.pkl
+      hash: md5
+      md5: 1346c7d7474cca4d1c8ba8eed5b674fa
+      size: 675622
+    - path: src/benchmark_fdb.py
+      hash: md5
+      md5: e72d8cf3e3743466df2eb6537705e7ba
+      size: 7398
+    params:
+      params.yaml:
+        benchmark:
+          model_path: models/fraud_model.pkl
+          fdb_key: sparknov
+          output_path: metrics/fdb_benchmark.json
+    outs:
+    - path: metrics/fdb_benchmark.json
+      hash: md5
+      md5: d4934d32df89a506592cda8980002015
+      size: 573
