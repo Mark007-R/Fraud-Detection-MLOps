@@ -1,0 +1,30 @@
+# Data
+data/
+data/raw/*.csv
+data/processed/*.csv
+
+# Models
+models/*.pkl
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+venv/
+.venv/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# DVC
+/data/raw/*.csv.dvc
