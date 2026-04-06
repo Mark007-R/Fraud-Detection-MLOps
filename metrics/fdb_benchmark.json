@@ -1,0 +1,25 @@
+{
+  "dataset_key": "sparknov",
+  "fdb_standardized": false,
+  "our_model_auc": 0.9210076846056613,
+  "baselines": {
+    "AutoGluon": {
+      "baseline_auc": 0.952,
+      "our_auc": 0.9210076846056613,
+      "status": "BELOW",
+      "delta": -0.030992
+    },
+    "H2O AutoML": {
+      "baseline_auc": 0.947,
+      "our_auc": 0.9210076846056613,
+      "status": "BELOW",
+      "delta": -0.025992
+    },
+    "AutoSklearn": {
+      "baseline_auc": 0.931,
+      "our_auc": 0.9210076846056613,
+      "status": "BELOW",
+      "delta": -0.009992
+    }
+  }
+}
