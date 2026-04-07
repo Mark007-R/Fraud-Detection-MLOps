@@ -104,17 +104,34 @@ def _write_roc_curve_svg(path: Path, fpr: list[float], tpr: list[float], auc_roc
     path.write_text("\n".join(svg), encoding="utf-8")
 
 
+def _write_unavailable_roc_curve_svg(path: Path) -> None:
+    """Write a placeholder SVG when ROC is undefined for a single-class target."""
+    svg = [
+        '<svg xmlns="http://www.w3.org/2000/svg" width="420" height="320" viewBox="0 0 420 320">',
+        '<rect width="100%" height="100%" fill="#ffffff"/>',
+        '<text x="20" y="32" font-family="Arial" font-size="20" fill="#111827">ROC Curve - AirPay Fraud Detection</text>',
+        '<text x="20" y="70" font-family="Arial" font-size="14" fill="#374151">ROC is undefined because y_test contains a single class.</text>',
+        '<line x1="45" y1="275" x2="375" y2="45" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="5,5"/>',
+        '<text x="190" y="306" font-family="Arial" font-size="14" fill="#374151">False Positive Rate</text>',
+        '<text x="18" y="170" font-family="Arial" font-size="14" fill="#374151" transform="rotate(-90 18 170)">True Positive Rate</text>',
+        '</svg>',
+    ]
+
+    path.write_text("\n".join(svg), encoding="utf-8")
+
+
 def main() -> None:
     """Run Stage 5 evaluation flow."""
     params = load_params()
+    data_cfg = params.get("data", {})
     cfg = params.get("evaluate", {})
 
     model_path = Path(cfg.get("model_path", "models/fraud_model.pkl"))
     metrics_path = Path(cfg.get("metrics_path", "metrics/scores.json"))
     reports_dir = Path(cfg.get("reports_dir", "reports/"))
 
-    x_test_path = Path("data/processed/X_test.csv")
-    y_test_path = Path("data/processed/y_test.csv")
+    x_test_path = Path(data_cfg.get("x_test_path", "data/processed/X_test.csv"))
+    y_test_path = Path(data_cfg.get("y_test_path", "data/processed/y_test.csv"))
 
     if not model_path.exists():
         raise FileNotFoundError(f"[Evaluate] Model not found: {model_path}")
@@ -137,13 +154,15 @@ def main() -> None:
     y_pred = model.predict(X_test)
     y_prob = model.predict_proba(X_test)[:, 1]
 
+    y_test_has_both_classes = y_test.nunique() > 1
+
     metrics = {
         "precision": float(precision_score(y_test, y_pred, zero_division=0)),
         "recall": float(recall_score(y_test, y_pred, zero_division=0)),
         "f1_score": float(f1_score(y_test, y_pred, zero_division=0)),
         "accuracy": float(accuracy_score(y_test, y_pred)),
-        "auc_roc": float(roc_auc_score(y_test, y_prob)) if y_test.nunique() > 1 else 0.0,
-        "average_precision": float(average_precision_score(y_test, y_prob)),
+        "auc_roc": float(roc_auc_score(y_test, y_prob)) if y_test_has_both_classes else 0.0,
+        "average_precision": float(average_precision_score(y_test, y_prob)) if y_test_has_both_classes else 0.0,
     }
 
     metrics_path.parent.mkdir(parents=True, exist_ok=True)
@@ -152,11 +171,14 @@ def main() -> None:
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=2)
 
-    cm = confusion_matrix(y_test, y_pred)
+    cm = confusion_matrix(y_test, y_pred, labels=[0, 1])
     _write_confusion_matrix_svg(reports_dir / "confusion_matrix.svg", cm.tolist())
 
-    fpr, tpr, _ = roc_curve(y_test, y_prob)
-    _write_roc_curve_svg(reports_dir / "roc_curve.svg", list(fpr), list(tpr), metrics["auc_roc"])
+    if y_test_has_both_classes:
+        fpr, tpr, _ = roc_curve(y_test, y_prob)
+        _write_roc_curve_svg(reports_dir / "roc_curve.svg", list(fpr), list(tpr), metrics["auc_roc"])
+    else:
+        _write_unavailable_roc_curve_svg(reports_dir / "roc_curve.svg")
 
     print("[Evaluate] Classification report:")
     print(classification_report(y_test, y_pred, digits=4, zero_division=0))
