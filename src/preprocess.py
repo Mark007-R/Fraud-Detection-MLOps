@@ -118,12 +118,17 @@ def engineer_features_pandas(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         Engineered dataframe.
     """
-    amount = pd.to_numeric(df.get("amount", 0.0), errors="coerce").fillna(0.0)
-    hour = pd.to_numeric(df.get("hour_of_day", 0), errors="coerce").fillna(0).astype(int)
-    day = pd.to_numeric(df.get("day_of_month", 1), errors="coerce").fillna(1).astype(int)
+    def _series_or_default(column: str, default: float | int) -> pd.Series:
+        if column in df.columns:
+            return pd.to_numeric(df[column], errors="coerce")
+        return pd.Series(default, index=df.index)
 
-    bal_change = pd.to_numeric(df.get("balance_change_orig", 0.0), errors="coerce")
-    bal_ratio = pd.to_numeric(df.get("balance_ratio", 0.0), errors="coerce")
+    amount = _series_or_default("amount", 0.0).fillna(0.0)
+    hour = _series_or_default("hour_of_day", 0).fillna(0).astype(int)
+    day = _series_or_default("day_of_month", 1).fillna(1).astype(int)
+
+    bal_change = _series_or_default("balance_change_orig", 0.0)
+    bal_ratio = _series_or_default("balance_ratio", 0.0)
 
     bal_change_abs = bal_change.abs()
     med = float(bal_change_abs.dropna().median()) if bal_change_abs.notna().any() else 0.0
