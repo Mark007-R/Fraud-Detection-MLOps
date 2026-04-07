@@ -32,12 +32,13 @@ def load_params(path: str = "params.yaml") -> dict:
 def main() -> None:
     """Run Stage 4 training flow."""
     params = load_params()
+    data_cfg = params.get("data", {})
     cfg = params.get("train", {})
 
-    features_path = Path("data/processed/features.csv")
-    model_path = Path("models/fraud_model.pkl")
-    x_test_path = Path("data/processed/X_test.csv")
-    y_test_path = Path("data/processed/y_test.csv")
+    features_path = Path(data_cfg.get("features_path", "data/processed/features.csv"))
+    model_path = Path(data_cfg.get("model_path", "models/fraud_model.pkl"))
+    x_test_path = Path(data_cfg.get("x_test_path", "data/processed/X_test.csv"))
+    y_test_path = Path(data_cfg.get("y_test_path", "data/processed/y_test.csv"))
 
     if not features_path.exists():
         raise FileNotFoundError(f"[Train] Missing features file: {features_path}")
