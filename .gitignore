@@ -12,6 +12,7 @@ __pycache__/
 # Large generated artifacts
 data/
 models/
+reports/*.svg
 
 # Editor and OS files
 .vscode/
