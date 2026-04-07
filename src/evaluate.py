@@ -1,0 +1,168 @@
+"""Stage 5: Evaluate trained fraud model and produce reports."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import joblib
+import pandas as pd
+import yaml
+from sklearn.metrics import (
+    accuracy_score,
+    average_precision_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+    roc_curve,
+)
+
+
+def load_params(path: str = "params.yaml") -> dict:
+    """Load YAML params.
+
+    Parameters
+    ----------
+    path : str
+        Params file path.
+
+    Returns
+    -------
+    dict
+        Parsed params.
+    """
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def _write_confusion_matrix_svg(path: Path, cm: list[list[int]]) -> None:
+    """Write a simple SVG confusion matrix visualization."""
+    width = 420
+    height = 320
+    cell = 120
+    start_x = 110
+    start_y = 70
+    labels = [[str(cm[0][0]), str(cm[0][1])], [str(cm[1][0]), str(cm[1][1])]]
+    colors = [["#dbeafe", "#bfdbfe"], ["#93c5fd", "#60a5fa"]]
+
+    svg = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        '<rect width="100%" height="100%" fill="#ffffff"/>',
+        '<text x="20" y="32" font-family="Arial" font-size="20" fill="#111827">Confusion Matrix - AirPay Fraud Detection</text>',
+        '<text x="52" y="120" font-family="Arial" font-size="14" fill="#374151" transform="rotate(-90 52 120)">Actual</text>',
+        '<text x="215" y="292" font-family="Arial" font-size="14" fill="#374151">Predicted</text>',
+    ]
+
+    for row in range(2):
+        for col in range(2):
+            x = start_x + col * cell
+            y = start_y + row * cell
+            svg.append(f'<rect x="{x}" y="{y}" width="{cell}" height="{cell}" fill="{colors[row][col]}" stroke="#1f2937" stroke-width="1"/>')
+            svg.append(f'<text x="{x + cell / 2}" y="{y + cell / 2 + 8}" text-anchor="middle" font-family="Arial" font-size="24" fill="#111827">{labels[row][col]}</text>')
+
+    svg.append('<text x="170" y="60" text-anchor="middle" font-family="Arial" font-size="14" fill="#374151">Predicted 0</text>')
+    svg.append('<text x="290" y="60" text-anchor="middle" font-family="Arial" font-size="14" fill="#374151">Predicted 1</text>')
+    svg.append('<text x="80" y="140" text-anchor="end" font-family="Arial" font-size="14" fill="#374151">Actual 0</text>')
+    svg.append('<text x="80" y="260" text-anchor="end" font-family="Arial" font-size="14" fill="#374151">Actual 1</text>')
+    svg.append('</svg>')
+
+    path.write_text("\n".join(svg), encoding="utf-8")
+
+
+def _write_roc_curve_svg(path: Path, fpr: list[float], tpr: list[float], auc_roc: float) -> None:
+    """Write a simple SVG ROC curve visualization."""
+    width = 420
+    height = 320
+    margin = 45
+    plot_w = width - 2 * margin
+    plot_h = height - 2 * margin
+
+    def scale_x(value: float) -> float:
+        return margin + value * plot_w
+
+    def scale_y(value: float) -> float:
+        return height - margin - value * plot_h
+
+    points = " ".join(f"{scale_x(x):.1f},{scale_y(y):.1f}" for x, y in zip(fpr, tpr))
+    svg = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        '<rect width="100%" height="100%" fill="#ffffff"/>',
+        '<text x="20" y="32" font-family="Arial" font-size="20" fill="#111827">ROC Curve - AirPay Fraud Detection</text>',
+        f'<text x="20" y="54" font-family="Arial" font-size="12" fill="#374151">AUC = {auc_roc:.4f}</text>',
+        f'<line x1="{margin}" y1="{height - margin}" x2="{width - margin}" y2="{height - margin}" stroke="#9ca3af" stroke-width="1"/>',
+        f'<line x1="{margin}" y1="{margin}" x2="{margin}" y2="{height - margin}" stroke="#9ca3af" stroke-width="1"/>',
+        f'<polyline points="{points}" fill="none" stroke="#2563eb" stroke-width="2.5"/>',
+        f'<line x1="{margin}" y1="{height - margin}" x2="{width - margin}" y2="{margin}" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="5,5"/>',
+        '<text x="190" y="306" font-family="Arial" font-size="14" fill="#374151">False Positive Rate</text>',
+        '<text x="18" y="170" font-family="Arial" font-size="14" fill="#374151" transform="rotate(-90 18 170)">True Positive Rate</text>',
+        '</svg>',
+    ]
+
+    path.write_text("\n".join(svg), encoding="utf-8")
+
+
+def main() -> None:
+    """Run Stage 5 evaluation flow."""
+    params = load_params()
+    cfg = params.get("evaluate", {})
+
+    model_path = Path(cfg.get("model_path", "models/fraud_model.pkl"))
+    metrics_path = Path(cfg.get("metrics_path", "metrics/scores.json"))
+    reports_dir = Path(cfg.get("reports_dir", "reports/"))
+
+    x_test_path = Path("data/processed/X_test.csv")
+    y_test_path = Path("data/processed/y_test.csv")
+
+    if not model_path.exists():
+        raise FileNotFoundError(f"[Evaluate] Model not found: {model_path}")
+    if not x_test_path.exists() or not y_test_path.exists():
+        raise FileNotFoundError("[Evaluate] Missing X_test.csv or y_test.csv in data/processed/")
+
+    artifact = joblib.load(model_path)
+    model = artifact["model"]
+    feature_columns = artifact["feature_columns"]
+
+    X_test = pd.read_csv(x_test_path)
+    y_test = pd.read_csv(y_test_path)["is_fraud"].astype(int)
+
+    # Align just in case of schema drift
+    for col in feature_columns:
+        if col not in X_test.columns:
+            X_test[col] = 0
+    X_test = X_test[feature_columns]
+
+    y_pred = model.predict(X_test)
+    y_prob = model.predict_proba(X_test)[:, 1]
+
+    metrics = {
+        "precision": float(precision_score(y_test, y_pred, zero_division=0)),
+        "recall": float(recall_score(y_test, y_pred, zero_division=0)),
+        "f1_score": float(f1_score(y_test, y_pred, zero_division=0)),
+        "accuracy": float(accuracy_score(y_test, y_pred)),
+        "auc_roc": float(roc_auc_score(y_test, y_prob)) if y_test.nunique() > 1 else 0.0,
+        "average_precision": float(average_precision_score(y_test, y_prob)),
+    }
+
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)
+    reports_dir.mkdir(parents=True, exist_ok=True)
+
+    with open(metrics_path, "w", encoding="utf-8") as f:
+        json.dump(metrics, f, indent=2)
+
+    cm = confusion_matrix(y_test, y_pred)
+    _write_confusion_matrix_svg(reports_dir / "confusion_matrix.svg", cm.tolist())
+
+    fpr, tpr, _ = roc_curve(y_test, y_prob)
+    _write_roc_curve_svg(reports_dir / "roc_curve.svg", list(fpr), list(tpr), metrics["auc_roc"])
+
+    print("[Evaluate] Classification report:")
+    print(classification_report(y_test, y_pred, digits=4, zero_division=0))
+    print(f"[Evaluate] Metrics saved to {metrics_path}")
+    print(f"[Evaluate] Reports saved to {reports_dir}")
+
+
+if __name__ == "__main__":
+    main()
