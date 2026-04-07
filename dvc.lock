@@ -5,8 +5,16 @@ stages:
     deps:
     - path: src/load_fdb.py
       hash: md5
-      md5: 071d208601f8be6a8eb22d2011697f30
-      size: 4852
+      md5: efb5600ad2bee3915e50d271b9c1a3c8
+      size: 5192
+    params:
+      params.yaml:
+        fdb:
+          api_key: ''
+          dataset_key: sparkov
+          dataset_version: latest
+          enable_cache: true
+          cache_dir: data/raw/fdb_cache
     outs:
     - path: data/raw/sparkov.csv
       hash: md5
@@ -47,14 +55,13 @@ stages:
       size: 400995390
     - path: src/preprocess.py
       hash: md5
-      md5: ea269a99873930b34f423186d6056d17
-      size: 6854
+      md5: 92c323d41d4fbd0fb68053af778cbad6
+      size: 6981
     params:
       params.yaml:
         preprocess:
           input: data/processed/combined_transactions.csv
           output: data/processed/features.csv
-          chunk_size: 100000
     outs:
     - path: data/processed/features.csv
       hash: md5
@@ -69,10 +76,24 @@ stages:
       size: 1532739766
     - path: src/train.py
       hash: md5
-      md5: 8a7ad79a15a177918aa1e0fe125c580c
-      size: 3659
+      md5: 54316d8b2f2521510e2faa333bb42d93
+      size: 3815
     params:
       params.yaml:
+        data:
+          raw_paysim_path: data/raw/paysim.csv
+          raw_sparkov_path: data/raw/sparkov.csv
+          combined_path: data/processed/combined_dataset.csv
+          features_path: data/processed/features.csv
+          train_path: data/processed/train.csv
+          test_path: data/processed/test.csv
+          x_test_path: data/processed/X_test.csv
+          y_test_path: data/processed/y_test.csv
+          fdb_sparkov_test_path: data/raw/sparkov_test_split.csv
+          model_path: models/fraud_model.pkl
+          metrics_path: metrics/scores.json
+          confusion_matrix_path: reports/confusion_matrix.png
+          benchmark_path: metrics/fdb_benchmark.json
         train:
           model_type: xgboost
           test_size: 0.2
@@ -83,6 +104,14 @@ stages:
           scale_pos_weight: 50
           use_smote: false
     outs:
+    - path: data/processed/X_test.csv
+      hash: md5
+      md5: 3145d4b82ad9d0afffcad4038526947d
+      size: 301889620
+    - path: data/processed/y_test.csv
+      hash: md5
+      md5: c2e17bc827fe3df84961f5696475e023
+      size: 4595587
     - path: models/fraud_model.pkl
       hash: md5
       md5: 1346c7d7474cca4d1c8ba8eed5b674fa
@@ -90,20 +119,42 @@ stages:
   evaluate:
     cmd: .venv\Scripts\python.exe src/evaluate.py
     deps:
+    - path: data/processed/X_test.csv
+      hash: md5
+      md5: 3145d4b82ad9d0afffcad4038526947d
+      size: 301889620
     - path: data/processed/features.csv
       hash: md5
       md5: 10dc68d489cf1975392ec2272d11e941
       size: 1532739766
+    - path: data/processed/y_test.csv
+      hash: md5
+      md5: c2e17bc827fe3df84961f5696475e023
+      size: 4595587
     - path: models/fraud_model.pkl
       hash: md5
       md5: 1346c7d7474cca4d1c8ba8eed5b674fa
       size: 675622
     - path: src/evaluate.py
       hash: md5
-      md5: db13d8a24397f09d8dce4266657aa0d4
-      size: 6991
+      md5: 369422d6dcc6edc74c755665affa3a80
+      size: 8360
     params:
       params.yaml:
+        data:
+          raw_paysim_path: data/raw/paysim.csv
+          raw_sparkov_path: data/raw/sparkov.csv
+          combined_path: data/processed/combined_dataset.csv
+          features_path: data/processed/features.csv
+          train_path: data/processed/train.csv
+          test_path: data/processed/test.csv
+          x_test_path: data/processed/X_test.csv
+          y_test_path: data/processed/y_test.csv
+          fdb_sparkov_test_path: data/raw/sparkov_test_split.csv
+          model_path: models/fraud_model.pkl
+          metrics_path: metrics/scores.json
+          confusion_matrix_path: reports/confusion_matrix.png
+          benchmark_path: metrics/fdb_benchmark.json
         evaluate:
           model_path: models/fraud_model.pkl
           metrics_path: metrics/scores.json
