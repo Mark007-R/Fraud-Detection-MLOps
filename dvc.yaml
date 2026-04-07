@@ -3,6 +3,8 @@ stages:
     cmd: .venv\Scripts\python.exe src/load_fdb.py
     deps:
       - src/load_fdb.py
+    params:
+      - fdb
     outs:
       - data/raw/sparkov.csv
 
@@ -34,8 +36,11 @@ stages:
       - data/processed/features.csv
     params:
       - train
+      - data
     outs:
       - models/fraud_model.pkl
+      - data/processed/X_test.csv
+      - data/processed/y_test.csv
 
   evaluate:
     cmd: .venv\Scripts\python.exe src/evaluate.py
@@ -43,8 +48,11 @@ stages:
       - src/evaluate.py
       - models/fraud_model.pkl
       - data/processed/features.csv
+      - data/processed/X_test.csv
+      - data/processed/y_test.csv
     params:
       - evaluate
+      - data
     metrics:
       - metrics/scores.json:
           cache: false
@@ -58,6 +66,7 @@ stages:
       - src/benchmark_fdb.py
       - models/fraud_model.pkl
     params:
+      - fdb
       - benchmark
     metrics:
       - metrics/fdb_benchmark.json:
