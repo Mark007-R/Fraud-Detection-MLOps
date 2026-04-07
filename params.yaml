@@ -5,6 +5,8 @@ data:
   features_path: data/processed/features.csv
   train_path: data/processed/train.csv
   test_path: data/processed/test.csv
+  x_test_path: data/processed/X_test.csv
+  y_test_path: data/processed/y_test.csv
   fdb_sparkov_test_path: data/raw/sparkov_test_split.csv
   model_path: models/fraud_model.pkl
   metrics_path: metrics/scores.json
@@ -13,6 +15,7 @@ data:
 
 fdb:
   api_key: ""  # Set via environment or config
+  dataset_key: sparkov
   dataset_version: "latest"
   enable_cache: true
   cache_dir: data/raw/fdb_cache
@@ -36,7 +39,6 @@ combine:
 preprocess:
   input: data/processed/combined_transactions.csv
   output: data/processed/features.csv
-  chunk_size: 100000
 
 train:
   model_type: xgboost
@@ -55,7 +57,6 @@ evaluate:
 
 benchmark:
   model_path: models/fraud_model.pkl
-  fdb_key: sparknov
   output_path: metrics/fdb_benchmark.json
 
 split:
