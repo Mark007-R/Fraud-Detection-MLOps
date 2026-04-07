@@ -6,9 +6,16 @@ import pathlib
 from typing import Any
 
 import pandas as pd
+import yaml
 
 
-def _try_load_fdb_train_split(fdb_key: str = "sparknov") -> pd.DataFrame:
+def load_params(path: str = "params.yaml") -> dict[str, Any]:
+    """Load pipeline parameters from YAML."""
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
+def _try_load_fdb_train_split(fdb_key: str = "sparkov") -> pd.DataFrame:
     """Load Sparkov train split from FDB using best-effort API compatibility.
 
     Parameters
@@ -83,13 +90,17 @@ def _try_load_fdb_train_split(fdb_key: str = "sparknov") -> pd.DataFrame:
 
 def main() -> None:
     """Run Stage 1 pipeline step and persist Sparkov train split CSV."""
+    params = load_params()
+    fdb_cfg = params.get("fdb", {})
+
     output_path = pathlib.Path("data/raw/sparkov.csv")
     fallback_train_path = pathlib.Path("data/raw/sparkov_train.csv")
+    fdb_key = str(fdb_cfg.get("dataset_key", "sparkov"))
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    print("[LoadFDB] Loading Sparkov train split from FDB key='sparknov'...")
+    print(f"[LoadFDB] Loading Sparkov train split from FDB key='{fdb_key}'...")
     try:
-        sparkov_df = _try_load_fdb_train_split("sparknov")
+        sparkov_df = _try_load_fdb_train_split(fdb_key)
     except ImportError as exc:
         print(f"[LoadFDB] ImportError: {exc}")
         print("[LoadFDB] Falling back to local Sparkov train split if available.")
