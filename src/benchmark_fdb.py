@@ -148,10 +148,11 @@ def _sparkov_to_common_schema(df: pd.DataFrame) -> pd.DataFrame:
 def main() -> None:
     """Run Stage 6 benchmark flow and save comparison JSON."""
     params = load_params()
+    fdb_cfg = params.get("fdb", {})
     cfg = params.get("benchmark", {})
 
     model_path = Path(cfg.get("model_path", "models/fraud_model.pkl"))
-    fdb_key = str(cfg.get("fdb_key", "sparknov"))
+    fdb_key = str(fdb_cfg.get("dataset_key", "sparkov"))
     output_path = Path(cfg.get("output_path", "metrics/fdb_benchmark.json"))
 
     if not model_path.exists():
