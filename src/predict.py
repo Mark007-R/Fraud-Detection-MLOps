@@ -67,7 +67,7 @@ def parse_args() -> argparse.Namespace:
     argparse.Namespace
         Parsed args.
     """
-    parser = argparse.ArgumentParser(description="AirPay fraud prediction utility.")
+    parser = argparse.ArgumentParser(description="SENTINEL fraud prediction utility.")
     parser.add_argument("--input-csv", type=str, default="", help="Path to input CSV file")
     parser.add_argument("--input-json", type=str, default="", help="JSON object or list of objects")
     parser.add_argument("--model-path", type=str, default="models/fraud_model.pkl", help="Model path")
