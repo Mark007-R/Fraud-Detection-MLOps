@@ -1,4 +1,4 @@
-"""Stage 6: Benchmark AirPay model against FDB published baselines."""
+"""Stage 6: Benchmark SENTINEL model against FDB published baselines."""
 
 from __future__ import annotations
 
