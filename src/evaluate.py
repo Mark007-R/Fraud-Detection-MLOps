@@ -51,7 +51,7 @@ def _write_confusion_matrix_svg(path: Path, cm: list[list[int]]) -> None:
     svg = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
-        '<text x="20" y="32" font-family="Arial" font-size="20" fill="#111827">Confusion Matrix - AirPay Fraud Detection</text>',
+        '<text x="20" y="32" font-family="Arial" font-size="20" fill="#111827">Confusion Matrix - SENTINEL Fraud Detection</text>',
         '<text x="52" y="120" font-family="Arial" font-size="14" fill="#374151" transform="rotate(-90 52 120)">Actual</text>',
         '<text x="215" y="292" font-family="Arial" font-size="14" fill="#374151">Predicted</text>',
     ]
@@ -90,7 +90,7 @@ def _write_roc_curve_svg(path: Path, fpr: list[float], tpr: list[float], auc_roc
     svg = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
-        '<text x="20" y="32" font-family="Arial" font-size="20" fill="#111827">ROC Curve - AirPay Fraud Detection</text>',
+        '<text x="20" y="32" font-family="Arial" font-size="20" fill="#111827">ROC Curve - SENTINEL Fraud Detection</text>',
         f'<text x="20" y="54" font-family="Arial" font-size="12" fill="#374151">AUC = {auc_roc:.4f}</text>',
         f'<line x1="{margin}" y1="{height - margin}" x2="{width - margin}" y2="{height - margin}" stroke="#9ca3af" stroke-width="1"/>',
         f'<line x1="{margin}" y1="{margin}" x2="{margin}" y2="{height - margin}" stroke="#9ca3af" stroke-width="1"/>',
@@ -109,7 +109,7 @@ def _write_unavailable_roc_curve_svg(path: Path) -> None:
     svg = [
         '<svg xmlns="http://www.w3.org/2000/svg" width="420" height="320" viewBox="0 0 420 320">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
-        '<text x="20" y="32" font-family="Arial" font-size="20" fill="#111827">ROC Curve - AirPay Fraud Detection</text>',
+        '<text x="20" y="32" font-family="Arial" font-size="20" fill="#111827">ROC Curve - SENTINEL Fraud Detection</text>',
         '<text x="20" y="70" font-family="Arial" font-size="14" fill="#374151">ROC is undefined because y_test contains a single class.</text>',
         '<line x1="45" y1="275" x2="375" y2="45" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="5,5"/>',
         '<text x="190" y="306" font-family="Arial" font-size="14" fill="#374151">False Positive Rate</text>',
