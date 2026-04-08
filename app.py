@@ -12,78 +12,78 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Add custom CSS for red and white theme
+# Add custom CSS for light blue and black theme
 st.markdown("""
 <style>
     [data-testid="stAppViewContainer"] {
-        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+        background: linear-gradient(135deg, #e6f4ff 0%, #bcdcff 100%);
     }
     
     [data-testid="stHeader"] {
-        background: linear-gradient(90deg, #CC0000 0%, #1a1f3a 100%);
-        border-bottom: 3px solid #CC0000;
+        background: linear-gradient(90deg, #93c5fd 0%, #dbeafe 100%);
+        border-bottom: 3px solid #0b0f19;
     }
     
     .main-header {
         text-align: center;
-        color: #FFFFFF;
+        color: #0b0f19;
         margin-bottom: 2rem;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
     }
     
     .main-header h1 {
-        color: #FFFFFF;
+        color: #0b0f19;
         font-weight: 900;
-        text-shadow: 2px 2px 4px rgba(204, 0, 0, 0.5);
+        text-shadow: 2px 2px 4px rgba(14, 165, 233, 0.45);
     }
     
     .metric-card {
-        background: linear-gradient(135deg, #CC0000 0%, #990000 100%);
-        color: white;
+        background: linear-gradient(135deg, #93c5fd 0%, #bfdbfe 100%);
+        color: #0b0f19;
         padding: 1.5rem;
         border-radius: 0.5rem;
         text-align: center;
         margin: 1rem 0;
-        border: 2px solid #FFFFFF;
-        box-shadow: 0 4px 15px rgba(204, 0, 0, 0.3);
+        border: 2px solid #0b0f19;
+        box-shadow: 0 4px 15px rgba(14, 165, 233, 0.25);
     }
     
     .fraud-alert {
-        background-color: #CC0000;
-        border-left: 6px solid #FFFFFF;
+        background-color: #0b0f19;
+        border-left: 6px solid #93c5fd;
         padding: 1.5rem;
         border-radius: 0.5rem;
         margin: 1rem 0;
-        color: #FFFFFF;
+        color: #e6f4ff;
         font-weight: bold;
-        box-shadow: 0 4px 15px rgba(204, 0, 0, 0.4);
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.35);
     }
     
     .safe-transaction {
-        background-color: #1a1f3a;
-        border-left: 6px solid #00FF00;
+        background-color: #bcdcff;
+        border-left: 6px solid #0b0f19;
         padding: 1.5rem;
         border-radius: 0.5rem;
         margin: 1rem 0;
-        color: #FFFFFF;
+        color: #0b0f19;
         font-weight: bold;
     }
     
     h1, h2, h3 {
-        color: #FFFFFF !important;
+        color: #0b0f19 !important;
     }
     
     .stTabs [role="tablist"] button[aria-selected="true"] {
-        border-bottom: 3px solid #CC0000 !important;
-        color: #CC0000 !important;
+        border-bottom: 3px solid #0b0f19 !important;
+        color: #0b0f19 !important;
     }
     
     .stTabs [role="tablist"] button {
-        color: #CCCCCC !important;
+        color: #334155 !important;
     }
     
     label, p {
-        color: #FFFFFF !important;
+        color: #0b0f19 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -91,15 +91,15 @@ st.markdown("""
 # Sidebar navigation
 with st.sidebar:
     st.markdown("""
-    <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, #CC0000 0%, #990000 100%); border-radius: 0.5rem; border: 2px solid #FFFFFF;">
-        <h2 style="color: #FFFFFF; margin: 0; font-weight: 900;">SENTINEL</h2>
-        <p style="color: #FFFFFF; margin: 0.5rem 0; font-weight: bold;">Fraud Detection System</p>
+    <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, #93c5fd 0%, #bfdbfe 100%); border-radius: 0.5rem; border: 2px solid #0b0f19;">
+        <h2 style="color: #0b0f19; margin: 0; font-weight: 900;">SENTINEL</h2>
+        <p style="color: #0b0f19; margin: 0.5rem 0; font-weight: bold;">Fraud Detection System</p>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("---")
     st.markdown("""
-    <div style="color: #CCCCCC;">
+    <div style="color: #334155;">
 
     Quick Navigation:
     - Home Dashboard
@@ -116,7 +116,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown(
-        '<p style="text-align: center; color: #CC0000; font-weight: bold;">Red Alert Mode Active</p>',
+        '<p style="text-align: center; color: #0b0f19; font-weight: bold;">Blue Mode Active</p>',
         unsafe_allow_html=True
     )
 
@@ -251,3 +251,4 @@ with tab4:
 
 st.markdown("---")
 st.markdown("*SENTINEL Fraud Detection System | Powered by XGBoost & Dask*")
+
