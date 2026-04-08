@@ -12,36 +12,36 @@ from src.predict import predict_dataframe
 
 st.set_page_config(page_title="Predict Fraud - SENTINEL", layout="wide")
 
-# Custom CSS for red and white theme
+# Custom CSS for light blue and black theme
 st.markdown("""
 <style>
     [data-testid="stAppViewContainer"] {
-        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+        background: linear-gradient(135deg, #e6f4ff 0%, #bcdcff 100%);
     }
     
     h1, h2, h3, label {
-        color: #FFFFFF !important;
+        color: #0b0f19 !important;
     }
     
     .stTabs [role="tablist"] button[aria-selected="true"] {
-        border-bottom: 3px solid #CC0000 !important;
-        color: #CC0000 !important;
+        border-bottom: 3px solid #0b0f19 !important;
+        color: #0b0f19 !important;
     }
     
     .stButton > button {
-        background: linear-gradient(135deg, #CC0000 0%, #990000 100%);
-        color: #FFFFFF !important;
-        border: 2px solid #FFFFFF;
+        background: linear-gradient(135deg, #0b0f19 0%, #1f2937 100%);
+        color: #e6f4ff !important;
+        border: 2px solid #0b0f19;
         font-weight: bold;
     }
     
     .stButton > button:hover {
-        background: linear-gradient(135deg, #FFFFFF 0%, #CCCCCC 100%);
-        color: #CC0000 !important;
+        background: linear-gradient(135deg, #93c5fd 0%, #dbeafe 100%);
+        color: #0b0f19 !important;
     }
     
     .stNumberInput, .stSelectbox, .stTextInput {
-        color: #FFFFFF;
+        color: #0b0f19;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -190,11 +190,11 @@ with tab1:
 
             if fraud_pred == 1:
                 st.markdown(f"""
-                <div style="background-color: #CC0000; border-left: 6px solid #FFFFFF;
+                <div style="background-color: #0b0f19; border-left: 6px solid #93c5fd;
                             padding: 1.5rem; border-radius: 0.5rem; margin: 1rem 0;
-                            box-shadow: 0 4px 15px rgba(204, 0, 0, 0.4);">
-                    <h3 style="color: #FFFFFF; margin: 0;">FRAUD ALERT DETECTED</h3>
-                    <p style="color: #FFFFFF; margin: 0.5rem 0 0 0; font-weight: bold; font-size: 16px;">
+                            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.35);">
+                    <h3 style="color: #e6f4ff; margin: 0;">FRAUD ALERT DETECTED</h3>
+                    <p style="color: #e6f4ff; margin: 0.5rem 0 0 0; font-weight: bold; font-size: 16px;">
                         This transaction has been flagged as potentially fraudulent
                         with a {fraud_prob*100:.2f}% probability.
                     </p>
@@ -202,10 +202,10 @@ with tab1:
                 """, unsafe_allow_html=True)
             else:
                 st.markdown(f"""
-                <div style="background-color: #1a1f3a; border-left: 6px solid #00FF00;
+                <div style="background-color: #bcdcff; border-left: 6px solid #0b0f19;
                             padding: 1.5rem; border-radius: 0.5rem; margin: 1rem 0;">
-                    <h3 style="color: #00FF00; margin: 0;">LEGITIMATE TRANSACTION DETECTED</h3>
-                    <p style="color: #FFFFFF; margin: 0.5rem 0 0 0; font-weight: bold; font-size: 16px;">
+                    <h3 style="color: #0b0f19; margin: 0;">LEGITIMATE TRANSACTION DETECTED</h3>
+                    <p style="color: #0b0f19; margin: 0.5rem 0 0 0; font-weight: bold; font-size: 16px;">
                         This transaction appears legitimate with a {(1-fraud_prob)*100:.2f}% confidence level.
                     </p>
                 </div>
@@ -332,3 +332,4 @@ with tab2:
 
 st.markdown("---")
 st.markdown("*Predictions powered by XGBoost trained on PaySim and Sparkov datasets*")
+
