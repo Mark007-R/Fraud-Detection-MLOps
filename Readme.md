@@ -1,4 +1,4 @@
-# AirPay Fraud Detection Pipeline
+# SENTINEL Fraud Detection Pipeline
 
 An end-to-end fraud detection system for digital payment transactions using **Dask** for scalable data processing and **DVC** for reproducible ML pipelines. Built with XGBoost, featuring automated feature engineering, experiment tracking, and model versioning.
 
@@ -11,6 +11,7 @@ An end-to-end fraud detection system for digital payment transactions using **Da
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
+- [Using the Web UI](#using-the-web-ui)
 - [Pipeline Stages](#pipeline-stages)
 - [Running the Pipeline](#running-the-pipeline)
 - [Experiment Tracking](#experiment-tracking)
@@ -53,21 +54,22 @@ Digital payment platforms process millions of transactions daily, making manual 
 
 ## Tech Stack
 
-| Component              | Tool                  |
-| ---------------------- | --------------------- |
-| Data Processing        | Dask                  |
-| Model Training         | XGBoost, Scikit-learn |
-| Pipeline Orchestration | DVC                   |
-| Data/Model Versioning  | DVC + Git             |
-| Visualization          | Matplotlib, Seaborn   |
-| Language               | Python 3.9+           |
+| Component              | Tool                        |
+| ---------------------- | --------------------------- |
+| Data Processing        | Dask                        |
+| Model Training         | XGBoost, Scikit-learn       |
+| Pipeline Orchestration | DVC                         |
+| Data/Model Versioning  | DVC + Git                   |
+| Visualization (Static) | Matplotlib, Seaborn         |
+| Visualization (Web UI) | Streamlit, Plotly, Altair   |
+| Language               | Python 3.9+                 |
 
 ---
 
 ## Project Structure
 
 ```
-airpay-fraud-detection-pipeline/
+sentinel-fraud-detection-pipeline/
 │
 ├── data/
 │   ├── raw/                        # Original dataset (DVC tracked)
@@ -82,6 +84,11 @@ airpay-fraud-detection-pipeline/
 │   ├── evaluate.py                 # Metrics & confusion matrix
 │   └── predict.py                  # Inference on new data
 │
+├── pages/                          # Streamlit UI pages
+│   ├── 1_Predict.py               # Single & batch fraud prediction interface
+│   ├── 2_Performance.py            # Model evaluation metrics & visualizations
+│   └── 3_Transactions.py           # Transaction analysis & insights
+│
 ├── notebooks/
 │   └── eda.ipynb                   # Exploratory data analysis
 │
@@ -91,9 +98,8 @@ airpay-fraud-detection-pipeline/
 ├── metrics/
 │   └── scores.json                 # Precision, Recall, F1, AUC
 │
-├── reports/
-│   └── confusion_matrix.png        # Evaluation plots
-│
+├── app.py                          # Streamlit main app entry point
+├── ui_utils.py                     # UI utility functions & helpers
 ├── dvc.yaml                        # DVC pipeline definition
 ├── dvc.lock                        # Pipeline lock file
 ├── params.yaml                     # Hyperparameters & config
@@ -116,8 +122,8 @@ airpay-fraud-detection-pipeline/
 
 ```bash
 # Clone the repository
-git clone https://github.com/<your-username>/airpay-fraud-detection-pipeline.git
-cd airpay-fraud-detection-pipeline
+git clone https://github.com/<your-username>/sentinel-fraud-detection-pipeline.git
+cd sentinel-fraud-detection-pipeline
 
 # Create virtual environment
 python -m venv venv
@@ -141,6 +147,128 @@ dvc pull
 # Download the dataset from Kaggle (see Dataset section below)
 # Place it in data/raw/transactions.csv
 ```
+
+---
+
+## Using the Web UI
+
+### 🛡️ SENTINEL Fraud Detection Dashboard
+
+A modern, interactive web interface built with **Streamlit** for fraud prediction, model evaluation, and transaction analysis.
+
+### Features
+
+- **🔍 Fraud Prediction** — Detect fraudulent transactions in real-time
+  - Single transaction prediction with instant results
+  - Batch upload for multiple transactions
+  - Fraud probability scores and confidence levels
+  
+- **📊 Performance Dashboard** — Comprehensive model metrics
+  - Classification metrics (Accuracy, Precision, Recall, F1)
+  - Confusion matrix visualization
+  - ROC curve and AUC analysis
+  - Feature importance rankings
+  
+- **📈 Transaction Analysis** — Data insights and visualizations
+  - Transaction amount distributions
+  - Pattern detection and anomalies
+  - Time-based trends
+  - Feature correlations
+  - Data export functionality
+
+### Running the UI
+
+```bash
+# Ensure you're in the project directory and virtual environment is activated
+# Install Streamlit (should already be in requirements.txt)
+pip install -r requirements.txt
+
+# Start the Streamlit app
+streamlit run app.py
+```
+
+The app will open in your browser at `http://localhost:8501`
+
+### UI Structure
+
+```
+SENTINEL Fraud Detection Dashboard
+├── 🏠 Home
+│   └── Quick overview & latest metrics
+├── 🔍 Predict Fraud
+│   ├── Single Transaction Prediction
+│   └── Batch Upload (CSV)
+├── 📊 Performance
+│   ├── Classification Metrics
+│   ├── Confusion Matrix
+│   ├── ROC Curve
+│   ├── Feature Importance
+│   └── Detailed Report
+└── 📈 Transactions
+    ├── Amount Analysis
+    ├── Pattern Detection
+    ├── Time-based Trends
+    ├── Feature Distributions
+    └── Correlations
+```
+
+### Example Workflow
+
+1. **Train the Model** (if not already trained)
+   ```bash
+   dvc repro
+   ```
+
+2. **Launch the UI**
+   ```bash
+   streamlit run app.py
+   ```
+
+3. **Make Predictions**
+   - Go to "Predict Fraud" tab
+   - Enter transaction details or upload CSV
+   - Get instant fraud probability
+
+4. **Review Performance**
+   - Go to "Performance" tab
+   - View model metrics and visualizations
+
+5. **Analyze Transactions**
+   - Go to "Transactions" tab
+   - Explore patterns and anomalies
+
+### Customizing the UI
+
+**Theme & Colors** — Edit the CSS styles in `app.py`:
+```python
+st.markdown("""
+<style>
+    .fraud-alert { background-color: #fee2e2; ... }
+    .safe-transaction { background-color: #dcfce7; ... }
+</style>
+""", unsafe_allow_html=True)
+```
+
+**Model Path** — Change the default model path in prediction pages:
+```python
+model_path = "models/fraud_model.pkl"  # Edit this
+```
+
+**UI Utils** — Helper functions available in `ui_utils.py`:
+```python
+from ui_utils import (
+    load_model_metrics,
+    load_features_data,
+    validate_transaction_data,
+    calculate_fraud_statistics
+)
+```
+
+### Performance Tips
+
+- **Batch predictions**: Upload CSV for faster processing of multiple transactions
+- **Caching**: The UI caches metrics and features data automatically
+- **Large datasets**: Use `nrows` parameter to load subsets for faster exploration
 
 ---
 
