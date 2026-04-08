@@ -8,27 +8,28 @@ from pathlib import Path
 
 st.set_page_config(page_title="Transactions - SENTINEL", layout="wide")
 
+# Custom CSS for light blue and black theme
 st.markdown("""
 <style>
     [data-testid="stAppViewContainer"] {
-        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+        background: linear-gradient(135deg, #e6f4ff 0%, #bcdcff 100%);
     }
     
     h1, h2, h3, label, p {
-        color: #FFFFFF !important;
+        color: #0b0f19 !important;
     }
     
     .stMetric {
-        background: linear-gradient(135deg, #CC0000 0%, #990000 100%);
-        border: 2px solid #FFFFFF;
+        background: linear-gradient(135deg, #93c5fd 0%, #bfdbfe 100%);
+        border: 2px solid #0b0f19;
         border-radius: 0.5rem;
         padding: 1rem;
-        box-shadow: 0 4px 15px rgba(204, 0, 0, 0.3);
+        box-shadow: 0 4px 15px rgba(14, 165, 233, 0.25);
     }
     
     .stTabs [role="tablist"] button[aria-selected="true"] {
-        border-bottom: 3px solid #CC0000 !important;
-        color: #CC0000 !important;
+        border-bottom: 3px solid #0b0f19 !important;
+        color: #0b0f19 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -114,7 +115,7 @@ with tab1:
                     title='Amount Distribution by Class',
                     labels={'is_fraud': 'Class', 'amount': 'Amount ($)'},
                     color='is_fraud',
-                    color_discrete_map={0: '#10b981', 1: '#ef4444'}
+                    color_discrete_map={0: '#60a5fa', 1: '#1e3a8a'}
                 )
             else:
                 fig = px.box(df, y='amount', title='Amount Distribution')
@@ -157,7 +158,7 @@ with tab1:
                     title='Transactions by Amount Bracket',
                     labels={'x': 'Amount Range', 'y': 'Count'},
                 )
-                fig.update_traces(marker_color='#10b981')
+                fig.update_traces(marker_color='#60a5fa')
                 st.plotly_chart(fig, use_container_width=True)
 
 with tab2:
@@ -175,7 +176,7 @@ with tab2:
                 go.Pie(
                     labels=fraud_dist.index,
                     values=fraud_dist.values,
-                    marker_colors=['#10b981', '#ef4444'],
+                    marker_colors=['#60a5fa', '#1e3a8a'],
                 )
             ])
             fig.update_layout(title="Fraud vs Legitimate Transactions")
@@ -248,7 +249,7 @@ with tab3:
                     title=f'Frauds Over {selected_time_col}',
                     labels={'x': selected_time_col, 'y': 'Fraud Count'}
                 )
-                fig.update_traces(marker_color='#ef4444')
+                fig.update_traces(marker_color='#1e3a8a')
                 st.plotly_chart(fig, use_container_width=True)
     else:
         st.markdown("""
@@ -368,3 +369,4 @@ with col3:
 
 st.markdown("---")
 st.markdown("*Transaction data processed using Dask | Features engineered in preprocessing stage*")
+
