@@ -10,138 +10,232 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.predict import predict_dataframe
 
-st.set_page_config(page_title="Predict Fraud - SENTINEL", layout="wide")
+st.set_page_config(page_title="Predict Fraud - SENTINEL", layout="wide", page_icon="S")
 
-# Custom CSS for light blue and black theme
+# Dark theme CSS
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
     [data-testid="stAppViewContainer"] {
-        background: linear-gradient(135deg, #e6f4ff 0%, #bcdcff 100%);
+        background: linear-gradient(160deg, #0b0f19 0%, #111827 40%, #1e293b 100%);
+        font-family: 'Inter', sans-serif;
     }
-    
-    h1, h2, h3, label {
-        color: #0b0f19 !important;
+
+    [data-testid="stHeader"] {
+        background: rgba(11, 15, 25, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(147, 197, 253, 0.15);
     }
-    
+
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #0b0f19 0%, #111827 100%);
+        border-right: 1px solid rgba(147, 197, 253, 0.1);
+    }
+
+    h1, h2, h3 {
+        color: #e2e8f0 !important;
+    }
+
+    p, label, .stMarkdown {
+        color: #cbd5e1 !important;
+    }
+
+    .page-header {
+        padding: 1rem 0 2rem 0;
+    }
+
+    .page-header h1 {
+        background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 50%, #3b82f6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 900;
+        font-size: 2.2rem;
+    }
+
+    .page-header p {
+        color: #94a3b8 !important;
+    }
+
+    .stTabs [role="tablist"] {
+        background: rgba(147, 197, 253, 0.05);
+        border-radius: 8px;
+        padding: 4px;
+    }
+
+    .stTabs [role="tablist"] button {
+        color: #94a3b8 !important;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
     .stTabs [role="tablist"] button[aria-selected="true"] {
-        border-bottom: 3px solid #0b0f19 !important;
-        color: #0b0f19 !important;
+        background: rgba(59, 130, 246, 0.2) !important;
+        color: #93c5fd !important;
+        border-bottom: 2px solid #3b82f6 !important;
     }
-    
+
     .stButton > button {
-        background: linear-gradient(135deg, #0b0f19 0%, #1f2937 100%);
-        color: #e6f4ff !important;
-        border: 2px solid #0b0f19;
-        font-weight: bold;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: #ffffff !important;
+        border: 1px solid rgba(147, 197, 253, 0.3);
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 0.6rem 1.5rem;
+        transition: all 0.3s ease;
     }
-    
+
     .stButton > button:hover {
-        background: linear-gradient(135deg, #93c5fd 0%, #dbeafe 100%);
-        color: #0b0f19 !important;
+        background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+        transform: translateY(-1px);
     }
-    
-    .stNumberInput, .stSelectbox, .stTextInput {
-        color: #0b0f19;
+
+    .stMetric {
+        background: linear-gradient(135deg, rgba(147, 197, 253, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%);
+        border: 1px solid rgba(147, 197, 253, 0.15);
+        border-radius: 12px;
+        padding: 1rem;
     }
+
+    .stMetric label { color: #94a3b8 !important; }
+    .stMetric [data-testid="stMetricValue"] { color: #e2e8f0 !important; }
+
+    .result-fraud {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(185, 28, 28, 0.05) 100%);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-left: 4px solid #ef4444;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+    }
+
+    .result-fraud h3 { color: #fca5a5 !important; margin: 0 0 0.5rem 0; }
+    .result-fraud p { color: #fecaca !important; margin: 0; font-weight: 500; }
+
+    .result-safe {
+        background: linear-gradient(135deg, rgba(52, 211, 153, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+        border: 1px solid rgba(52, 211, 153, 0.3);
+        border-left: 4px solid #34d399;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+    }
+
+    .result-safe h3 { color: #6ee7b7 !important; margin: 0 0 0.5rem 0; }
+    .result-safe p { color: #a7f3d0 !important; margin: 0; font-weight: 500; }
+
+    .section-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(147, 197, 253, 0.2), transparent);
+        margin: 2rem 0;
+    }
+
+    .stNumberInput label, .stSelectbox label { color: #94a3b8 !important; }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("# Fraud Prediction")
-st.markdown("Detect fraudulent transactions in real-time using our XGBoost model")
+st.markdown("""
+<div class="page-header">
+    <h1>Fraud Prediction</h1>
+    <p>Analyze transactions for potential fraud using the trained XGBoost model</p>
+</div>
+""", unsafe_allow_html=True)
 
 model_path = Path("models/fraud_model.pkl")
 if not model_path.exists():
     st.error("Model not found at `models/fraud_model.pkl`. Please train the model first.")
     st.stop()
 
-st.success("Model loaded successfully")
+st.success("Model loaded and ready for predictions")
 
 tab1, tab2 = st.tabs(["Single Transaction", "Batch Upload"])
 
 with tab1:
-    st.markdown("## Single Transaction Prediction")
-    
+    st.markdown("### Transaction Details")
+
     col1, col2, col3 = st.columns(3)
-    
+
     with col1:
         amount = st.number_input(
             "Transaction Amount ($)",
             value=500.0,
             min_value=0.0,
             step=10.0,
-            help="Amount of the transaction"
+            help="Amount of the transaction",
         )
-    
+
     with col2:
         merchant_id = st.number_input(
             "Merchant ID",
             value=1,
             min_value=1,
-            help="Unique merchant identifier"
+            help="Unique merchant identifier",
         )
-    
+
     with col3:
         customer_id = st.number_input(
             "Customer ID",
             value=1,
             min_value=1,
-            help="Unique customer identifier"
+            help="Unique customer identifier",
         )
-    
+
     col4, col5, col6 = st.columns(3)
-    
+
     with col4:
         transaction_type = st.selectbox(
             "Transaction Type",
             options=["TRANSFER", "CASH_OUT", "CASH_IN", "PAYMENT", "DEBIT"],
-            help="Type of transaction being performed"
+            help="Type of transaction being performed",
         )
-    
+
     with col5:
         merchant_type = st.selectbox(
             "Merchant Type",
             options=["online", "pos", "atm", "physical"],
-            help="Category of the merchant"
+            help="Category of the merchant",
         )
-    
+
     with col6:
         time_of_day = st.selectbox(
             "Time of Day",
             options=["night", "morning", "afternoon", "evening"],
-            help="Time period of the transaction"
+            help="Time period of the transaction",
         )
-    
+
     col7, col8, col9 = st.columns(3)
-    
+
     with col7:
         days_since_last = st.number_input(
             "Days Since Last Transaction",
             value=0,
             min_value=0,
-            help="Number of days since customer's last transaction"
+            help="Number of days since customer's last transaction",
         )
-    
+
     with col8:
         transactions_today = st.number_input(
             "Transactions Today",
             value=1,
             min_value=1,
-            help="Number of transactions customer made today"
+            help="Number of transactions customer made today",
         )
-    
+
     with col9:
         amount_change = st.number_input(
             "Amount Change % (vs avg)",
             value=0.0,
             min_value=-100.0,
             max_value=1000.0,
-            help="Percentage change from average transaction amount"
+            help="Percentage change from average transaction amount",
         )
-    
-    # Prediction button
-    if st.button("🔮 Predict Fraud Probability", use_container_width=True, type="primary"):
+
+    st.markdown("")
+
+    if st.button("Analyze Transaction", use_container_width=True, type="primary"):
         try:
-            # Create dataframe for single prediction
             input_data = pd.DataFrame({
                 'amount': [amount],
                 'merchant_id': [merchant_id],
@@ -153,132 +247,104 @@ with tab1:
                 'transactions_today': [transactions_today],
                 'amount_change_pct': [amount_change],
             })
-            
+
             with st.spinner("Analyzing transaction..."):
                 results = predict_dataframe(input_data, str(model_path))
 
             fraud_prob = results['fraud_probability'].values[0]
             fraud_pred = results['fraud_prediction'].values[0]
 
-            st.markdown("---")
-            st.markdown("## Prediction Results")
+            st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)
+            st.markdown("### Prediction Results")
 
             res_col1, res_col2, res_col3 = st.columns(3)
 
             with res_col1:
-                st.metric(
-                    "Fraud Probability",
-                    f"{fraud_prob*100:.2f}%",
-                    delta=None
-                )
+                st.metric("Fraud Probability", f"{fraud_prob * 100:.2f}%")
 
             with res_col2:
                 prediction_label = "FRAUDULENT" if fraud_pred == 1 else "LEGITIMATE"
-                st.metric(
-                    "Prediction",
-                    prediction_label,
-                    delta=None
-                )
+                st.metric("Prediction", prediction_label)
 
             with res_col3:
-                confidence = (max(fraud_prob, 1-fraud_prob) * 100)
-                st.metric(
-                    "Confidence",
-                    f"{confidence:.2f}%",
-                    delta=None
-                )
+                confidence = max(fraud_prob, 1 - fraud_prob) * 100
+                st.metric("Confidence", f"{confidence:.2f}%")
 
             if fraud_pred == 1:
                 st.markdown(f"""
-                <div style="background-color: #0b0f19; border-left: 6px solid #93c5fd;
-                            padding: 1.5rem; border-radius: 0.5rem; margin: 1rem 0;
-                            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.35);">
-                    <h3 style="color: #e6f4ff; margin: 0;">FRAUD ALERT DETECTED</h3>
-                    <p style="color: #e6f4ff; margin: 0.5rem 0 0 0; font-weight: bold; font-size: 16px;">
-                        This transaction has been flagged as potentially fraudulent
-                        with a {fraud_prob*100:.2f}% probability.
-                    </p>
+                <div class="result-fraud">
+                    <h3>FRAUD ALERT</h3>
+                    <p>This transaction has been flagged as potentially fraudulent
+                    with a {fraud_prob * 100:.2f}% probability. Review recommended.</p>
                 </div>
                 """, unsafe_allow_html=True)
             else:
                 st.markdown(f"""
-                <div style="background-color: #bcdcff; border-left: 6px solid #0b0f19;
-                            padding: 1.5rem; border-radius: 0.5rem; margin: 1rem 0;">
-                    <h3 style="color: #0b0f19; margin: 0;">LEGITIMATE TRANSACTION DETECTED</h3>
-                    <p style="color: #0b0f19; margin: 0.5rem 0 0 0; font-weight: bold; font-size: 16px;">
-                        This transaction appears legitimate with a {(1-fraud_prob)*100:.2f}% confidence level.
-                    </p>
+                <div class="result-safe">
+                    <h3>LEGITIMATE TRANSACTION</h3>
+                    <p>This transaction appears legitimate with a {(1 - fraud_prob) * 100:.2f}% confidence level.</p>
                 </div>
                 """, unsafe_allow_html=True)
-            
-            st.markdown("### Transaction Summary")
-            summary_data = {
-                "Amount": f"${amount:,.2f}",
-                "Type": transaction_type,
-                "Merchant": merchant_type,
-                "Time": time_of_day,
-                "Customer Transactions (Today)": transactions_today,
-                "Days Since Last Activity": days_since_last,
-            }
 
-            for key, value in summary_data.items():
-                st.write(f"**{key}:** {value}")
+            st.markdown("### Transaction Summary")
+            summary_df = pd.DataFrame({
+                "Field": ["Amount", "Type", "Merchant", "Time", "Transactions Today", "Days Since Last"],
+                "Value": [f"${amount:,.2f}", transaction_type, merchant_type, time_of_day,
+                          str(transactions_today), str(days_since_last)],
+            })
+            st.dataframe(summary_df, use_container_width=True, hide_index=True)
 
         except Exception as e:
             st.error(f"Prediction failed: {str(e)}")
-            st.info("Make sure the model is trained and all required features are properly formatted.")
+            st.info("Ensure the model is trained and all required features are properly formatted.")
 
 with tab2:
-    st.markdown("## Batch Prediction")
-    st.markdown("Upload a CSV file to make predictions on multiple transactions at once")
+    st.markdown("### Batch Prediction")
+    st.markdown("Upload a CSV file to analyze multiple transactions at once.")
 
     uploaded_file = st.file_uploader(
         "Choose a CSV file",
         type="csv",
-        help="CSV file should contain transaction columns: amount, merchant_id, customer_id, type, merchant_type, etc."
+        help="CSV file should contain transaction columns: amount, merchant_id, customer_id, type, merchant_type, etc.",
     )
 
     if uploaded_file is not None:
         try:
             input_df = pd.read_csv(uploaded_file)
 
-            st.markdown(f"### Loaded {len(input_df)} transactions")
-
-            st.markdown("**Data Preview:**")
+            st.markdown(f"**Loaded {len(input_df)} transactions**")
             st.dataframe(input_df.head(10), use_container_width=True)
 
-            if st.button("Predict Fraud (All Transactions)", use_container_width=True, type="primary"):
+            if st.button("Analyze All Transactions", use_container_width=True, type="primary"):
                 try:
                     with st.spinner(f"Analyzing {len(input_df)} transactions..."):
                         results = predict_dataframe(input_df, str(model_path))
 
                     output_df = pd.concat([input_df, results], axis=1)
 
-                    st.markdown("### Prediction Statistics")
-
-                    stats_col1, stats_col2, stats_col3, stats_col4 = st.columns(4)
+                    st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)
+                    st.markdown("### Batch Results")
 
                     fraudulent_count = (results['fraud_prediction'] == 1).sum()
                     legitimate_count = (results['fraud_prediction'] == 0).sum()
                     avg_fraud_prob = results['fraud_probability'].mean()
 
+                    stats_col1, stats_col2, stats_col3, stats_col4 = st.columns(4)
+
                     with stats_col1:
                         st.metric("Total Transactions", len(input_df))
-
                     with stats_col2:
-                        st.metric("Fraudulent", fraudulent_count)
-
+                        st.metric("Flagged as Fraud", fraudulent_count)
                     with stats_col3:
                         st.metric("Legitimate", legitimate_count)
-
                     with stats_col4:
-                        st.metric("Avg Fraud Probability", f"{avg_fraud_prob*100:.2f}%")
+                        st.metric("Avg Fraud Probability", f"{avg_fraud_prob * 100:.2f}%")
 
-                    st.markdown("### Fraud Distribution")
-                    fraud_dist = results['fraud_prediction'].value_counts()
+                    st.markdown("### Distribution")
                     col1, col2 = st.columns(2)
 
                     with col1:
+                        fraud_dist = results['fraud_prediction'].value_counts()
                         st.bar_chart(fraud_dist)
 
                     with col2:
@@ -289,8 +355,12 @@ with tab2:
                     st.markdown("### Detailed Predictions")
 
                     display_df = output_df.copy()
-                    display_df['fraud_probability'] = display_df['fraud_probability'].apply(lambda x: f"{x*100:.2f}%")
-                    display_df['fraud_prediction'] = display_df['fraud_prediction'].map({0: "Legitimate", 1: "Fraudulent"})
+                    display_df['fraud_probability'] = display_df['fraud_probability'].apply(
+                        lambda x: f"{x * 100:.2f}%"
+                    )
+                    display_df['fraud_prediction'] = display_df['fraud_prediction'].map(
+                        {0: "Legitimate", 1: "Fraudulent"}
+                    )
 
                     st.dataframe(display_df, use_container_width=True)
 
@@ -299,7 +369,7 @@ with tab2:
                         label="Download Predictions (CSV)",
                         data=csv,
                         file_name="fraud_predictions.csv",
-                        mime="text/csv"
+                        mime="text/csv",
                     )
 
                 except Exception as e:
@@ -309,7 +379,7 @@ with tab2:
             st.error(f"Failed to read CSV file: {str(e)}")
 
     else:
-        st.info("Upload a CSV file to get started with batch predictions")
+        st.info("Upload a CSV file to get started with batch predictions.")
 
         with st.expander("Example CSV Format"):
             example_data = {
@@ -321,15 +391,18 @@ with tab2:
             }
             example_df = pd.DataFrame(example_data)
             st.dataframe(example_df, use_container_width=True)
-            
+
             example_csv = example_df.to_csv(index=False)
             st.download_button(
                 label="Download Example CSV",
                 data=example_csv,
                 file_name="example_transactions.csv",
-                mime="text/csv"
+                mime="text/csv",
             )
 
-st.markdown("---")
-st.markdown("*Predictions powered by XGBoost trained on PaySim and Sparkov datasets*")
-
+st.markdown("""
+<div style="text-align: center; color: #475569; font-size: 0.8rem; padding: 1.5rem 0;
+            border-top: 1px solid rgba(147, 197, 253, 0.08);">
+    Predictions powered by XGBoost trained on PaySim and Sparkov datasets
+</div>
+""", unsafe_allow_html=True)
