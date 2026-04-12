@@ -5,24 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
-import yaml
 
-
-def load_params(path: str = "params.yaml") -> dict:
-    """Load YAML params file.
-
-    Parameters
-    ----------
-    path : str
-        Params file path.
-
-    Returns
-    -------
-    dict
-        Parsed params dictionary.
-    """
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+from src.config import load_params
 
 
 def _normalize_sparkov(df: pd.DataFrame) -> pd.DataFrame:

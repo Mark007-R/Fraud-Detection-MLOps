@@ -47,7 +47,6 @@ stages:
     deps:
       - src/evaluate.py
       - models/fraud_model.pkl
-      - data/processed/features.csv
       - data/processed/X_test.csv
       - data/processed/y_test.csv
     params:

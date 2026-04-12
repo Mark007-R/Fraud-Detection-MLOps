@@ -14,6 +14,14 @@ data/
 models/
 reports/*.svg
 
+# Secrets and environment
+.env
+.env.*
+.streamlit/secrets.toml
+
+# Logs
+*.log
+
 # Editor and OS files
 .vscode/
 .idea/
