@@ -73,6 +73,8 @@ def main() -> None:
         except ImportError:
             print("[Train] SMOTE requested but imbalanced-learn is not available. Continuing without SMOTE.")
 
+    early_stopping = int(cfg.get("early_stopping_rounds", 0))
+
     model = XGBClassifier(
         n_estimators=int(cfg.get("n_estimators", 200)),
         max_depth=int(cfg.get("max_depth", 6)),
@@ -82,10 +84,22 @@ def main() -> None:
         eval_metric="logloss",
         random_state=random_state,
         n_jobs=-1,
+        early_stopping_rounds=early_stopping if early_stopping > 0 else None,
     )
 
+    print(f"[Train] Training set: {X_train.shape[0]} samples, {X_train.shape[1]} features")
+    print(f"[Train] Test set: {X_test.shape[0]} samples")
+    print(f"[Train] Fraud rate (train): {y_train.mean():.4f}")
+    print(f"[Train] Fraud rate (test): {y_test.mean():.4f}")
+
     print("[Train] Fitting XGBoost model")
-    model.fit(X_train, y_train)
+    fit_params = {}
+    if early_stopping > 0:
+        fit_params["eval_set"] = [(X_test, y_test)]
+        fit_params["verbose"] = False
+        print(f"[Train] Early stopping enabled: {early_stopping} rounds")
+
+    model.fit(X_train, y_train, **fit_params)
 
     preds = model.predict(X_test)
     acc = accuracy_score(y_test, preds)

@@ -86,17 +86,27 @@ def engineer_features_df(df: pd.DataFrame) -> pd.DataFrame:
 
     bal_ratio_clipped = bal_ratio.fillna(0.0).clip(-10, 10)
 
+    # Percentile-based amount flags
+    amount_p95 = float(amount.quantile(0.95)) if len(amount) > 0 else 200000
+    amount_p99 = float(amount.quantile(0.99)) if len(amount) > 0 else 500000
+
     out = df.assign(
         amount=amount,
         is_fraud=pd.to_numeric(df["is_fraud"], errors="coerce").fillna(0).astype("int64"),
         tx_amount_log=np.log1p(amount),
         is_high_amount=(amount > 200000).astype("int64"),
+        is_p95_amount=(amount > amount_p95).astype("int64"),
+        is_p99_amount=(amount > amount_p99).astype("int64"),
+        amount_zscore=((amount - amount.mean()) / (amount.std() + 1e-8)),
         hour_sin=np.sin(2.0 * np.pi * hour / 24.0),
         hour_cos=np.cos(2.0 * np.pi * hour / 24.0),
         day_sin=np.sin(2.0 * np.pi * (day % 31) / 31.0),
         day_cos=np.cos(2.0 * np.pi * (day % 31) / 31.0),
+        is_night=(((hour >= 0) & (hour < 6)) | (hour >= 22)).astype("int64"),
+        is_weekend=((day % 7).isin([5, 6])).astype("int64"),
         balance_change_abs=bal_change_abs,
         balance_ratio_clipped=bal_ratio_clipped,
+        balance_change_log=np.log1p(bal_change_abs),
     )
 
     out["amount_bin"] = _add_amount_bin_partition(out["amount"])
