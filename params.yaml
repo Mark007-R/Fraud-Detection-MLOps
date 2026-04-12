@@ -1,7 +1,7 @@
 data:
   raw_paysim_path: data/raw/paysim.csv
   raw_sparkov_path: data/raw/sparkov.csv
-  combined_path: data/processed/combined_dataset.csv
+  combined_path: data/processed/combined_transactions.csv
   features_path: data/processed/features.csv
   train_path: data/processed/train.csv
   test_path: data/processed/test.csv
