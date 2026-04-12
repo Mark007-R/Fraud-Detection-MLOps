@@ -129,6 +129,38 @@ def _normalize_paysim(df: pd.DataFrame) -> pd.DataFrame:
     return out[["amount", "is_fraud", "transaction_type", "hour_of_day", "day_of_month", "balance_change_orig", "balance_ratio", "has_balance_info", "source"]]
 
 
+def _validate_combined(df: pd.DataFrame) -> None:
+    """Validate the combined dataframe schema and data integrity.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Combined dataframe to validate.
+
+    Raises
+    ------
+    ValueError
+        If validation checks fail.
+    """
+    required = {"amount", "is_fraud", "transaction_type", "hour_of_day",
+                "day_of_month", "source"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"[Combine] Missing columns after merge: {sorted(missing)}")
+
+    if df["amount"].isnull().all():
+        raise ValueError("[Combine] All amounts are null after merge")
+
+    fraud_values = set(df["is_fraud"].dropna().unique())
+    if not fraud_values.issubset({0, 1}):
+        raise ValueError(f"[Combine] Unexpected fraud label values: {fraud_values}")
+
+    null_pct = df.isnull().mean()
+    high_null_cols = null_pct[null_pct > 0.5].index.tolist()
+    if high_null_cols:
+        print(f"[Combine] WARNING: High null rate (>50%) in columns: {high_null_cols}")
+
+
 def main() -> None:
     """Run Stage 2 to combine PaySim and Sparkov."""
     params = load_params()
@@ -149,11 +181,19 @@ def main() -> None:
     paysim_df = pd.read_csv(paysim_path)
     sparkov_df = pd.read_csv(sparkov_path)
 
+    print(f"[Combine] PaySim shape: {paysim_df.shape}, columns: {list(paysim_df.columns)}")
+    print(f"[Combine] Sparkov shape: {sparkov_df.shape}, columns: {list(sparkov_df.columns)}")
+
     paysim_std = _normalize_paysim(paysim_df)
     sparkov_std = _normalize_sparkov(sparkov_df)
 
+    print(f"[Combine] PaySim standardized: {paysim_std.shape}")
+    print(f"[Combine] Sparkov standardized: {sparkov_std.shape}")
+
     combined = pd.concat([paysim_std, sparkov_std], axis=0, ignore_index=True)
     combined = combined.sample(frac=1.0, random_state=42).reset_index(drop=True)
+
+    _validate_combined(combined)
 
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     combined.to_csv(output_path, index=False)
@@ -161,11 +201,13 @@ def main() -> None:
     total_rows = int(combined.shape[0])
     fraud_ratio = float(combined["is_fraud"].mean())
     source_counts = combined["source"].value_counts().to_dict()
+    type_counts = combined["transaction_type"].value_counts().to_dict()
 
     print(f"[Combine] Saved combined file to {output_path}")
     print(f"[Combine] Total rows: {total_rows}")
     print(f"[Combine] Fraud ratio: {fraud_ratio:.6f}")
     print(f"[Combine] Source counts: {source_counts}")
+    print(f"[Combine] Transaction types: {type_counts}")
 
 
 if __name__ == "__main__":
