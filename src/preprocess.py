@@ -143,16 +143,28 @@ def engineer_features_pandas(df: pd.DataFrame) -> pd.DataFrame:
     bal_change_abs = bal_change.abs()
     med = float(bal_change_abs.dropna().median()) if bal_change_abs.notna().any() else 0.0
 
+    # Percentile thresholds -- use training-time defaults for inference
+    amount_p95 = float(amount.quantile(0.95)) if len(amount) > 1 else 200000
+    amount_p99 = float(amount.quantile(0.99)) if len(amount) > 1 else 500000
+    amount_mean = float(amount.mean()) if len(amount) > 0 else 0.0
+    amount_std = float(amount.std()) if len(amount) > 1 else 1.0
+
     out = df.copy()
     out["amount"] = amount
     out["tx_amount_log"] = np.log1p(amount)
     out["is_high_amount"] = (amount > 200000).astype(int)
+    out["is_p95_amount"] = (amount > amount_p95).astype(int)
+    out["is_p99_amount"] = (amount > amount_p99).astype(int)
+    out["amount_zscore"] = (amount - amount_mean) / (amount_std + 1e-8)
     out["hour_sin"] = np.sin(2.0 * np.pi * hour / 24.0)
     out["hour_cos"] = np.cos(2.0 * np.pi * hour / 24.0)
     out["day_sin"] = np.sin(2.0 * np.pi * (day % 31) / 31.0)
     out["day_cos"] = np.cos(2.0 * np.pi * (day % 31) / 31.0)
+    out["is_night"] = (((hour >= 0) & (hour < 6)) | (hour >= 22)).astype(int)
+    out["is_weekend"] = ((day % 7).isin([5, 6])).astype(int)
     out["balance_change_abs"] = bal_change_abs.fillna(med)
     out["balance_ratio_clipped"] = bal_ratio.fillna(0.0).clip(-10, 10)
+    out["balance_change_log"] = np.log1p(bal_change_abs.fillna(med))
     out["amount_bin"] = pd.cut(
         out["amount"],
         bins=[-np.inf, 1000, 10000, 100000, np.inf],
