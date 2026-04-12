@@ -7,24 +7,8 @@ from typing import Iterable
 
 import numpy as np
 import pandas as pd
-import yaml
 
-
-def load_params(path: str = "params.yaml") -> dict:
-    """Load YAML parameters.
-
-    Parameters
-    ----------
-    path : str
-        Path to params file.
-
-    Returns
-    -------
-    dict
-        Parsed params.
-    """
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+from src.config import load_params
 
 
 def _add_amount_bin_partition(series: pd.Series) -> pd.Series:
