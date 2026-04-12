@@ -7,7 +7,6 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
-import yaml
 from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
@@ -20,22 +19,7 @@ from sklearn.metrics import (
     roc_curve,
 )
 
-
-def load_params(path: str = "params.yaml") -> dict:
-    """Load YAML params.
-
-    Parameters
-    ----------
-    path : str
-        Params file path.
-
-    Returns
-    -------
-    dict
-        Parsed params.
-    """
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+from src.config import load_params
 
 
 def _write_confusion_matrix_svg(path: Path, cm: list[list[int]]) -> None:

@@ -3,33 +3,18 @@ data:
   raw_sparkov_path: data/raw/sparkov.csv
   combined_path: data/processed/combined_transactions.csv
   features_path: data/processed/features.csv
-  train_path: data/processed/train.csv
-  test_path: data/processed/test.csv
   x_test_path: data/processed/X_test.csv
   y_test_path: data/processed/y_test.csv
-  fdb_sparkov_test_path: data/raw/sparkov_test_split.csv
   model_path: models/fraud_model.pkl
   metrics_path: metrics/scores.json
-  confusion_matrix_path: reports/confusion_matrix.png
+  confusion_matrix_path: reports/confusion_matrix.svg
+  roc_curve_path: reports/roc_curve.svg
   benchmark_path: metrics/fdb_benchmark.json
 
 fdb:
-  api_key: ""  # Set via environment or config
   dataset_key: sparkov
-  dataset_version: "latest"
   enable_cache: true
   cache_dir: data/raw/fdb_cache
-
-paysim:
-  # PaySim dataset typically available from Kaggle/Zenodo
-  # Will attempt to load from raw_paysim_path
-  skip_if_missing: false
-
-datasets:
-  paysim_rows: 6300000
-  sparkov_rows: 1300000
-  combined_output_rows: 7600000
-  split_ratio: 0.8
 
 combine:
   paysim_path: data/raw/paysim.csv
@@ -49,6 +34,7 @@ train:
   learning_rate: 0.1
   scale_pos_weight: 50
   use_smote: false
+  early_stopping_rounds: 0
 
 evaluate:
   model_path: models/fraud_model.pkl
@@ -58,26 +44,3 @@ evaluate:
 benchmark:
   model_path: models/fraud_model.pkl
   output_path: metrics/fdb_benchmark.json
-
-split:
-  test_size: 0.2
-  random_state: 42
-
-model:
-  n_estimators: 300
-  max_depth: 6
-  learning_rate: 0.05
-  subsample: 0.9
-  colsample_bytree: 0.8
-  reg_lambda: 1.0
-  min_child_weight: 1
-  objective: binary:logistic
-  early_stopping_rounds: 10
-
-benchmarking:
-  baselines:
-    - autogluon
-    - h2o
-    - auto_sklearn
-  time_limit_per_model: 600  # seconds
-  include_xgboost_baseline: true

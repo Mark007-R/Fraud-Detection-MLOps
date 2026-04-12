@@ -163,73 +163,69 @@ with tab1:
             value=500.0,
             min_value=0.0,
             step=10.0,
-            help="Amount of the transaction",
+            help="Dollar amount of the transaction",
         )
 
     with col2:
-        merchant_id = st.number_input(
-            "Merchant ID",
-            value=1,
-            min_value=1,
-            help="Unique merchant identifier",
-        )
-
-    with col3:
-        customer_id = st.number_input(
-            "Customer ID",
-            value=1,
-            min_value=1,
-            help="Unique customer identifier",
-        )
-
-    col4, col5, col6 = st.columns(3)
-
-    with col4:
         transaction_type = st.selectbox(
             "Transaction Type",
             options=["TRANSFER", "CASH_OUT", "CASH_IN", "PAYMENT", "DEBIT"],
             help="Type of transaction being performed",
         )
 
+    with col3:
+        source = st.selectbox(
+            "Data Source",
+            options=["paysim", "sparkov"],
+            help="Which payment network the transaction originates from",
+        )
+
+    col4, col5, col6 = st.columns(3)
+
+    with col4:
+        hour_of_day = st.slider(
+            "Hour of Day",
+            min_value=0,
+            max_value=23,
+            value=12,
+            help="Hour (0-23) when the transaction occurred",
+        )
+
     with col5:
-        merchant_type = st.selectbox(
-            "Merchant Type",
-            options=["online", "pos", "atm", "physical"],
-            help="Category of the merchant",
+        day_of_month = st.slider(
+            "Day of Month",
+            min_value=1,
+            max_value=31,
+            value=15,
+            help="Day of month when the transaction occurred",
         )
 
     with col6:
-        time_of_day = st.selectbox(
-            "Time of Day",
-            options=["night", "morning", "afternoon", "evening"],
-            help="Time period of the transaction",
+        has_balance_info = st.selectbox(
+            "Balance Info Available",
+            options=[1, 0],
+            format_func=lambda x: "Yes" if x == 1 else "No",
+            help="Whether sender balance data is available",
         )
 
-    col7, col8, col9 = st.columns(3)
+    col7, col8 = st.columns(2)
 
     with col7:
-        days_since_last = st.number_input(
-            "Days Since Last Transaction",
-            value=0,
-            min_value=0,
-            help="Number of days since customer's last transaction",
+        balance_change_orig = st.number_input(
+            "Balance Change (Sender)",
+            value=0.0,
+            step=100.0,
+            help="Difference between old and new balance of the sender",
         )
 
     with col8:
-        transactions_today = st.number_input(
-            "Transactions Today",
-            value=1,
-            min_value=1,
-            help="Number of transactions customer made today",
-        )
-
-    with col9:
-        amount_change = st.number_input(
-            "Amount Change % (vs avg)",
-            value=0.0,
-            min_value=-100.0,
-            max_value=1000.0,
-            help="Percentage change from average transaction amount",
+        balance_ratio = st.number_input(
+            "Balance Ratio",
+            value=0.5,
+            min_value=0.0,
+            max_value=10.0,
+            step=0.05,
+            help="Ratio of new balance to old balance (newBal / (oldBal + 1))",
         )
 
     st.markdown("")
@@ -238,14 +234,13 @@ with tab1:
         try:
             input_data = pd.DataFrame({
                 'amount': [amount],
-                'merchant_id': [merchant_id],
-                'customer_id': [customer_id],
-                'type': [transaction_type],
-                'merchant_type': [merchant_type],
-                'time_of_day': [time_of_day],
-                'days_since_last_transaction': [days_since_last],
-                'transactions_today': [transactions_today],
-                'amount_change_pct': [amount_change],
+                'transaction_type': [transaction_type],
+                'hour_of_day': [hour_of_day],
+                'day_of_month': [day_of_month],
+                'balance_change_orig': [balance_change_orig],
+                'balance_ratio': [balance_ratio],
+                'has_balance_info': [has_balance_info],
+                'source': [source],
             })
 
             with st.spinner("Analyzing transaction..."):
@@ -288,9 +283,12 @@ with tab1:
 
             st.markdown("### Transaction Summary")
             summary_df = pd.DataFrame({
-                "Field": ["Amount", "Type", "Merchant", "Time", "Transactions Today", "Days Since Last"],
-                "Value": [f"${amount:,.2f}", transaction_type, merchant_type, time_of_day,
-                          str(transactions_today), str(days_since_last)],
+                "Field": ["Amount", "Type", "Source", "Hour", "Day",
+                          "Balance Change", "Balance Ratio", "Balance Info"],
+                "Value": [f"${amount:,.2f}", transaction_type, source,
+                          str(hour_of_day), str(day_of_month),
+                          f"${balance_change_orig:,.2f}", f"{balance_ratio:.4f}",
+                          "Yes" if has_balance_info else "No"],
             })
             st.dataframe(summary_df, use_container_width=True, hide_index=True)
 

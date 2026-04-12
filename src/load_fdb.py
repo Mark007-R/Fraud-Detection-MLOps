@@ -6,13 +6,8 @@ import pathlib
 from typing import Any
 
 import pandas as pd
-import yaml
 
-
-def load_params(path: str = "params.yaml") -> dict[str, Any]:
-    """Load pipeline parameters from YAML."""
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+from src.config import load_params
 
 
 def _try_load_fdb_train_split(fdb_key: str = "sparkov") -> pd.DataFrame:

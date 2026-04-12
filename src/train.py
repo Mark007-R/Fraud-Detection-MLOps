@@ -6,27 +6,11 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
-import yaml
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 
-
-def load_params(path: str = "params.yaml") -> dict:
-    """Load YAML params.
-
-    Parameters
-    ----------
-    path : str
-        Params file path.
-
-    Returns
-    -------
-    dict
-        Parsed params.
-    """
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+from src.config import load_params
 
 
 def main() -> None:

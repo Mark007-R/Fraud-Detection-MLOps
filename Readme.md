@@ -29,12 +29,12 @@ The repository includes both:
 ```text
 Sentinel/
 |-- app.py
-|-- ui_utils.py
 |-- dvc.yaml
 |-- params.yaml
 |-- requirements.txt
 |-- Readme.md
 |-- src/
+|   |-- config.py
 |   |-- load_fdb.py
 |   |-- combine_datasets.py
 |   |-- preprocess.py
@@ -247,9 +247,8 @@ Interpretation:
 
 ## Notes and Limitations
 
-- Some UI components expect metric keys like f1 and avg_precision, while evaluation writes f1_score and average_precision. The app still runs, but certain displayed values may be blank/zero unless keys are aligned.
-- pages/3_Transactions.py currently uses pd.read_csv without importing pandas as pd.
-- params.yaml includes some legacy keys not used by the active scripts.
+- Lower precision (0.34) at the default 0.5 threshold indicates many false positives; adjusting the classification threshold can improve precision at the cost of recall.
+- The FDB benchmark stage requires the optional `fraud-dataset-benchmark` package and will fall back to local Sparkov data if unavailable.
 
 ## Useful Commands
 
