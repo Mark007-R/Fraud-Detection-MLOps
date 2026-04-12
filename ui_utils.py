@@ -165,9 +165,11 @@ def detect_outliers(df: pd.DataFrame, column: str, method: str = "iqr") -> pd.Da
     
     elif method == "zscore":
         from scipy import stats
-        z_scores = np.abs(stats.zscore(df[column].dropna()))
-        threshold = 3
-        return df[np.abs(stats.zscore(df[column])) > threshold]
+        clean = df[column].dropna()
+        if len(clean) < 2 or clean.std() == 0:
+            return pd.DataFrame()
+        mask = np.abs(stats.zscore(df[column].fillna(df[column].median()))) > 3
+        return df[mask]
     
     return pd.DataFrame()
 
