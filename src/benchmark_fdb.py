@@ -8,27 +8,10 @@ from typing import Any
 
 import joblib
 import pandas as pd
-import yaml
 from sklearn.metrics import roc_auc_score
 
+from src.config import load_params
 from src.preprocess import align_feature_columns, engineer_features_pandas
-
-
-def load_params(path: str = "params.yaml") -> dict:
-    """Load YAML params.
-
-    Parameters
-    ----------
-    path : str
-        Params file path.
-
-    Returns
-    -------
-    dict
-        Parsed params.
-    """
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
 
 
 def _load_fdb_test_split(fdb_key: str) -> pd.DataFrame:
