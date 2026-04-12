@@ -75,7 +75,7 @@ with col3:
 with col4:
     st.metric(
         "F1 Score",
-        f"{metrics.get('f1', 0):.4f}",
+        f"{metrics.get('f1_score', 0):.4f}",
         help="Harmonic mean of precision and recall"
     )
 
@@ -89,7 +89,7 @@ with col5:
 with col6:
     st.metric(
         "Avg Precision",
-        f"{metrics.get('avg_precision', 0):.4f}",
+        f"{metrics.get('average_precision', 0):.4f}",
         help="Area under precision-recall curve"
     )
 
@@ -116,9 +116,9 @@ with tab1:
             f"{metrics.get('accuracy', 0):.4f}",
             f"{metrics.get('precision', 0):.4f}",
             f"{metrics.get('recall', 0):.4f}",
-            f"{metrics.get('f1', 0):.4f}",
+            f"{metrics.get('f1_score', 0):.4f}",
             f"{metrics.get('auc_roc', 0):.4f}",
-            f"{metrics.get('avg_precision', 0):.4f}",
+            f"{metrics.get('average_precision', 0):.4f}",
             f"{metrics.get('support_neg', 0):.0f}",
             f"{metrics.get('support_pos', 0):.0f}",
         ],
@@ -143,7 +143,7 @@ with tab1:
             'Accuracy': metrics.get('accuracy', 0),
             'Precision': metrics.get('precision', 0),
             'Recall': metrics.get('recall', 0),
-            'F1': metrics.get('f1', 0),
+            'F1': metrics.get('f1_score', 0),
         }
         
         fig = go.Figure(data=[

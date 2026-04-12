@@ -156,13 +156,47 @@ def main() -> None:
 
     y_test_has_both_classes = y_test.nunique() > 1
 
+    cm = confusion_matrix(y_test, y_pred, labels=[0, 1])
+    tn, fp, fn, tp = int(cm[0][0]), int(cm[0][1]), int(cm[1][0]), int(cm[1][1])
+
+    auc_roc_val = float(roc_auc_score(y_test, y_prob)) if y_test_has_both_classes else 0.0
+    avg_prec_val = float(average_precision_score(y_test, y_prob)) if y_test_has_both_classes else 0.0
+
+    # Compute ROC curve data for UI
+    fpr_list, tpr_list = [], []
+    if y_test_has_both_classes:
+        fpr_arr, tpr_arr, _ = roc_curve(y_test, y_prob)
+        # Subsample to keep JSON size reasonable
+        step = max(1, len(fpr_arr) // 200)
+        fpr_list = [round(float(v), 6) for v in fpr_arr[::step]]
+        tpr_list = [round(float(v), 6) for v in tpr_arr[::step]]
+        # Ensure endpoint is included
+        if fpr_list[-1] != round(float(fpr_arr[-1]), 6):
+            fpr_list.append(round(float(fpr_arr[-1]), 6))
+            tpr_list.append(round(float(tpr_arr[-1]), 6))
+
+    # Feature importance from model
+    feature_importance = {}
+    if hasattr(model, "feature_importances_"):
+        for feat, imp in zip(feature_columns, model.feature_importances_):
+            feature_importance[feat] = round(float(imp), 6)
+
     metrics = {
         "precision": float(precision_score(y_test, y_pred, zero_division=0)),
         "recall": float(recall_score(y_test, y_pred, zero_division=0)),
         "f1_score": float(f1_score(y_test, y_pred, zero_division=0)),
         "accuracy": float(accuracy_score(y_test, y_pred)),
-        "auc_roc": float(roc_auc_score(y_test, y_prob)) if y_test_has_both_classes else 0.0,
-        "average_precision": float(average_precision_score(y_test, y_prob)) if y_test_has_both_classes else 0.0,
+        "auc_roc": auc_roc_val,
+        "average_precision": avg_prec_val,
+        "true_negatives": tn,
+        "false_positives": fp,
+        "false_negatives": fn,
+        "true_positives": tp,
+        "support_neg": tn + fp,
+        "support_pos": fn + tp,
+        "fpr": fpr_list,
+        "tpr": tpr_list,
+        "feature_importance": feature_importance,
     }
 
     metrics_path.parent.mkdir(parents=True, exist_ok=True)
@@ -171,12 +205,10 @@ def main() -> None:
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=2)
 
-    cm = confusion_matrix(y_test, y_pred, labels=[0, 1])
     _write_confusion_matrix_svg(reports_dir / "confusion_matrix.svg", cm.tolist())
 
     if y_test_has_both_classes:
-        fpr, tpr, _ = roc_curve(y_test, y_prob)
-        _write_roc_curve_svg(reports_dir / "roc_curve.svg", list(fpr), list(tpr), metrics["auc_roc"])
+        _write_roc_curve_svg(reports_dir / "roc_curve.svg", fpr_list, tpr_list, metrics["auc_roc"])
     else:
         _write_unavailable_roc_curve_svg(reports_dir / "roc_curve.svg")
 
