@@ -181,7 +181,7 @@ with tab1:
         with metric_col3:
             st.metric("Recall", f"{scores.get('recall', 0):.4f}")
         with metric_col4:
-            st.metric("F1 Score", f"{scores.get('f1', 0):.4f}")
+            st.metric("F1 Score", f"{scores.get('f1_score', 0):.4f}")
 
 with tab2:
     st.markdown("## Fraud Prediction")
@@ -225,7 +225,7 @@ with tab3:
             - **Accuracy**: {scores.get('accuracy', 0):.4f}
             - **Precision**: {scores.get('precision', 0):.4f}
             - **Recall**: {scores.get('recall', 0):.4f}
-            - **F1 Score**: {scores.get('f1', 0):.4f}
+            - **F1 Score**: {scores.get('f1_score', 0):.4f}
             """
             st.markdown(metrics_text)
         
@@ -233,7 +233,7 @@ with tab3:
             st.markdown("### ROC Metrics")
             metrics_text = f"""
             - **AUC-ROC**: {scores.get('auc_roc', 0):.4f}
-            - **Average Precision**: {scores.get('avg_precision', 0):.4f}
+            - **Average Precision**: {scores.get('average_precision', 0):.4f}
             """
             st.markdown(metrics_text)
 
