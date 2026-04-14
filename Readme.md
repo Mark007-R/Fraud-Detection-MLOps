@@ -51,6 +51,7 @@ Sentinel/
 |   `-- processed/
 |-- models/
 |-- metrics/
+|-- screenshots/
 `-- notebooks/
 ```
 
