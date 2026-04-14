@@ -233,17 +233,26 @@ Primary artifacts created by the pipeline:
 
 ### Streamlit App Screenshots
 
-**Home Dashboard**
-![Home Dashboard](screenshots/home.png)
+**Home Dashboard — KPIs & Model Status**
+![Home Dashboard - KPIs](screenshots/home.png)
+
+**Home Dashboard — Capabilities & Quick Start Guide**
+![Home Dashboard - Guide](screenshots/home2.png)
 
 **Fraud Prediction**
 ![Fraud Prediction](screenshots/predict.png)
 
-**Model Performance**
-![Model Performance](screenshots/performance.png)
+**Model Performance — Key Metrics**
+![Model Performance - Metrics](screenshots/performance.png)
 
-**Transaction Analysis**
-![Transaction Analysis](screenshots/transactions.png)
+**Model Performance — Charts & Class Distribution**
+![Model Performance - Charts](screenshots/performance2.png)
+
+**Transaction Analysis — Amount Distribution**
+![Transaction Analysis - Amounts](screenshots/transactions.png)
+
+**Transaction Analysis — Pattern & Anomaly Detection**
+![Transaction Analysis - Patterns](screenshots/transactions2.png)
 
 ## Current Metrics Snapshot
 
