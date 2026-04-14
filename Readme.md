@@ -231,6 +231,20 @@ Primary artifacts created by the pipeline:
 - reports/confusion_matrix.svg
 - reports/roc_curve.svg
 
+### Streamlit App Screenshots
+
+**Home Dashboard**
+![Home Dashboard](screenshots/home.png)
+
+**Fraud Prediction**
+![Fraud Prediction](screenshots/predict.png)
+
+**Model Performance**
+![Model Performance](screenshots/performance.png)
+
+**Transaction Analysis**
+![Transaction Analysis](screenshots/transactions.png)
+
 ## Current Metrics Snapshot
 
 From metrics/scores.json in this workspace:
