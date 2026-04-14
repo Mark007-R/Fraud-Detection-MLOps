@@ -2,7 +2,6 @@
 
 import streamlit as st
 import pandas as pd
-import numpy as np
 from pathlib import Path
 import json
 
@@ -146,6 +145,17 @@ st.markdown("""
 model_path = Path("models/fraud_model.pkl")
 if not model_path.exists():
     st.error("Model not found at `models/fraud_model.pkl`. Please train the model first.")
+    st.stop()
+
+try:
+    import joblib
+    _artifact = joblib.load(model_path)
+    if not isinstance(_artifact, dict) or "model" not in _artifact or "feature_columns" not in _artifact:
+        st.error("Model artifact is corrupted or outdated. Please retrain the model.")
+        st.stop()
+    del _artifact
+except Exception as e:
+    st.error(f"Failed to load model: {e}")
     st.stop()
 
 st.success("Model loaded and ready for predictions")
@@ -303,7 +313,7 @@ with tab2:
     uploaded_file = st.file_uploader(
         "Choose a CSV file",
         type="csv",
-        help="CSV file should contain transaction columns: amount, merchant_id, customer_id, type, merchant_type, etc.",
+        help="CSV should contain columns: amount, transaction_type, hour_of_day, day_of_month, balance_change_orig, balance_ratio, has_balance_info, source",
     )
 
     if uploaded_file is not None:
@@ -381,11 +391,14 @@ with tab2:
 
         with st.expander("Example CSV Format"):
             example_data = {
-                'amount': [500.0, 1000.0, 150.0],
-                'merchant_id': [123, 456, 789],
-                'customer_id': [1, 2, 3],
-                'type': ['TRANSFER', 'CASH_OUT', 'PAYMENT'],
-                'merchant_type': ['online', 'atm', 'pos'],
+                'amount': [500.0, 250000.0, 150.0],
+                'transaction_type': ['TRANSFER', 'CASH_OUT', 'PAYMENT'],
+                'hour_of_day': [14, 2, 10],
+                'day_of_month': [15, 28, 3],
+                'balance_change_orig': [500.0, 240000.0, 150.0],
+                'balance_ratio': [0.95, 0.05, 0.85],
+                'has_balance_info': [1, 1, 0],
+                'source': ['paysim', 'paysim', 'sparkov'],
             }
             example_df = pd.DataFrame(example_data)
             st.dataframe(example_df, use_container_width=True)
