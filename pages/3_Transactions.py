@@ -100,14 +100,16 @@ st.markdown("""
 
 features_file = Path("data/processed/features.csv")
 
+SAMPLE_SIZE = 50_000
+
 data_loaded = False
 df = None
 
 if features_file.exists():
     try:
-        df = pd.read_csv(features_file)
+        df = pd.read_csv(features_file, nrows=SAMPLE_SIZE)
         data_loaded = True
-        st.success(f"Loaded {len(df):,} transactions with {len(df.columns)} features")
+        st.success(f"Loaded {len(df):,} transactions (sample) with {len(df.columns)} features")
     except Exception as e:
         st.warning(f"Could not load features data: {e}")
 
