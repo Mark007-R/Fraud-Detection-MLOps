@@ -252,6 +252,9 @@ if Path("metrics/scores.json").exists():
         scores = json.load(f)
 
 # KPI Row
+if not scores:
+    st.info("Model not yet evaluated. Run `dvc repro evaluate` to generate metrics.")
+
 if scores:
     col1, col2, col3, col4, col5 = st.columns(5)
 
