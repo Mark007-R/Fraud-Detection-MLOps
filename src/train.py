@@ -50,12 +50,15 @@ def main() -> None:
     if bool(cfg.get("use_smote", False)):
         try:
             from imblearn.over_sampling import SMOTE
+        except ImportError as exc:
+            raise ImportError(
+                "[Train] SMOTE requested via use_smote=true but imbalanced-learn is not installed. "
+                "Install with `pip install imbalanced-learn`, or set use_smote=false in params.yaml."
+            ) from exc
 
-            print("[Train] Applying SMOTE to training split")
-            smote = SMOTE(random_state=random_state)
-            X_train, y_train = smote.fit_resample(X_train, y_train)
-        except ImportError:
-            print("[Train] SMOTE requested but imbalanced-learn is not available. Continuing without SMOTE.")
+        print("[Train] Applying SMOTE to training split")
+        smote = SMOTE(random_state=random_state)
+        X_train, y_train = smote.fit_resample(X_train, y_train)
 
     early_stopping = int(cfg.get("early_stopping_rounds", 0))
 
