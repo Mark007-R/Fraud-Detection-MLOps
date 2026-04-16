@@ -98,7 +98,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-features_file = Path("data/processed/features.csv")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+features_file = PROJECT_ROOT / "data" / "processed" / "features.csv"
 
 SAMPLE_SIZE = 50_000
 
@@ -455,6 +456,6 @@ with col2:
 st.markdown("""
 <div style="text-align: center; color: #475569; font-size: 0.8rem; padding: 1.5rem 0;
             border-top: 1px solid rgba(147, 197, 253, 0.08);">
-    Transaction data processed using Dask | Features engineered in preprocessing stage
+    Transaction data processed with Pandas | Features engineered in preprocessing stage
 </div>
 """, unsafe_allow_html=True)
