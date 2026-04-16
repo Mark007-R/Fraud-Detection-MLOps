@@ -180,13 +180,25 @@ python -m src.benchmark_fdb
 
 ### CLI prediction
 
-Single transaction JSON:
+Single transaction JSON — Linux / macOS (bash, single quotes):
 
 ```bash
+python src/predict.py --input-json '{"amount":250000,"transaction_type":"TRANSFER","hour_of_day":2,"day_of_month":14,"balance_change_orig":240000,"balance_ratio":0.05,"has_balance_info":1,"source":"paysim"}'
+```
+
+Single transaction JSON — Windows `cmd.exe` (escape inner quotes with `\"`):
+
+```cmd
 python src/predict.py --input-json "{\"amount\":250000,\"transaction_type\":\"TRANSFER\",\"hour_of_day\":2,\"day_of_month\":14,\"balance_change_orig\":240000,\"balance_ratio\":0.05,\"has_balance_info\":1,\"source\":\"paysim\"}"
 ```
 
-Batch CSV:
+Single transaction JSON — Windows PowerShell (`'...'` preserves the JSON verbatim):
+
+```powershell
+python src/predict.py --input-json '{"amount":250000,"transaction_type":"TRANSFER","hour_of_day":2,"day_of_month":14,"balance_change_orig":240000,"balance_ratio":0.05,"has_balance_info":1,"source":"paysim"}'
+```
+
+Batch CSV (portable across shells):
 
 ```bash
 python src/predict.py --input-csv data/processed/X_test.csv --output-csv predictions.csv

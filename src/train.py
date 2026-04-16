@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import joblib
@@ -50,12 +51,15 @@ def main() -> None:
     if bool(cfg.get("use_smote", False)):
         try:
             from imblearn.over_sampling import SMOTE
+        except ImportError as exc:
+            raise ImportError(
+                "[Train] SMOTE requested via use_smote=true but imbalanced-learn is not installed. "
+                "Install with `pip install imbalanced-learn`, or set use_smote=false in params.yaml."
+            ) from exc
 
-            print("[Train] Applying SMOTE to training split")
-            smote = SMOTE(random_state=random_state)
-            X_train, y_train = smote.fit_resample(X_train, y_train)
-        except ImportError:
-            print("[Train] SMOTE requested but imbalanced-learn is not available. Continuing without SMOTE.")
+        print("[Train] Applying SMOTE to training split")
+        smote = SMOTE(random_state=random_state)
+        X_train, y_train = smote.fit_resample(X_train, y_train)
 
     early_stopping = int(cfg.get("early_stopping_rounds", 0))
 
@@ -89,10 +93,23 @@ def main() -> None:
     acc = accuracy_score(y_test, preds)
 
     model_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Load feature thresholds sidecar from preprocess stage so inference
+    # reuses training-time percentiles/z-score stats (prevents leakage).
+    thresholds: dict[str, float] = {}
+    thresholds_path = features_path.parent / "feature_thresholds.json"
+    if thresholds_path.exists():
+        with open(thresholds_path, "r", encoding="utf-8") as f:
+            thresholds = json.load(f)
+        print(f"[Train] Loaded feature thresholds from {thresholds_path}")
+    else:
+        print(f"[Train] No thresholds sidecar at {thresholds_path}; artifact will omit them.")
+
     artifact = {
         "model": model,
         "feature_columns": list(X.columns),
         "target_column": "is_fraud",
+        "feature_thresholds": thresholds,
     }
     joblib.dump(artifact, model_path)
 

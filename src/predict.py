@@ -65,8 +65,9 @@ def predict_dataframe(input_df: pd.DataFrame, model_path: str = "models/fraud_mo
 
     model = artifact["model"]
     feature_columns = artifact["feature_columns"]
+    thresholds = artifact.get("feature_thresholds") or None
 
-    engineered = engineer_features_pandas(input_df.copy())
+    engineered = engineer_features_pandas(input_df.copy(), thresholds=thresholds)
     if "is_fraud" in engineered.columns:
         engineered = engineered.drop(columns=["is_fraud"])
     X = align_feature_columns(engineered, feature_columns)
