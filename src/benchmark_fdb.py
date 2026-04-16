@@ -178,11 +178,16 @@ def main() -> None:
     y_prob = model.predict_proba(X)[:, 1]
     auc_roc = float(roc_auc_score(y_true, y_prob)) if y_true.nunique() > 1 else 0.0
 
-    baselines = {
-        "AutoGluon": 0.952,
-        "H2O AutoML": 0.947,
-        "AutoSklearn": 0.931,
-    }
+    baselines_cfg = cfg.get("baselines")
+    if baselines_cfg:
+        baselines = {str(name): float(score) for name, score in baselines_cfg.items()}
+    else:
+        # Fallback defaults if params.yaml omits benchmark.baselines.
+        baselines = {
+            "AutoGluon": 0.952,
+            "H2O AutoML": 0.947,
+            "AutoSklearn": 0.931,
+        }
 
     comparisons = {}
     for name, score in baselines.items():
