@@ -142,7 +142,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-model_path = Path("models/fraud_model.pkl")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+model_path = PROJECT_ROOT / "models" / "fraud_model.pkl"
 if not model_path.exists():
     st.error("Model not found at `models/fraud_model.pkl`. Please train the model first.")
     st.stop()
