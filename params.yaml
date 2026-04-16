@@ -42,3 +42,7 @@ evaluate:
 benchmark:
   model_path: models/fraud_model.pkl
   output_path: metrics/fdb_benchmark.json
+  baselines:
+    AutoGluon: 0.952
+    H2O AutoML: 0.947
+    AutoSklearn: 0.931

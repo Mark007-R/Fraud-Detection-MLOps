@@ -28,12 +28,14 @@ stages:
       - preprocess
     outs:
       - data/processed/features.csv
+      - data/processed/feature_thresholds.json
 
   train:
     cmd: python src/train.py
     deps:
       - src/train.py
       - data/processed/features.csv
+      - data/processed/feature_thresholds.json
     params:
       - train
       - data

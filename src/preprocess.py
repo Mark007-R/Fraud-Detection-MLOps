@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Iterable
 
@@ -9,6 +10,33 @@ import numpy as np
 import pandas as pd
 
 from src.config import load_params
+
+
+def compute_feature_thresholds(df: pd.DataFrame) -> dict[str, float]:
+    """Compute training-time thresholds used by percentile / z-score features.
+
+    These values MUST be persisted and reused at inference time — computing
+    them from a single inference row produces degenerate features (e.g.,
+    `is_p95_amount` becomes 0 for every row since `amount.quantile(0.95)`
+    equals the row's own amount).
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Standardized transaction dataframe containing an `amount` column.
+
+    Returns
+    -------
+    dict[str, float]
+        Thresholds: amount_p95, amount_p99, amount_mean, amount_std.
+    """
+    amount = pd.to_numeric(df["amount"], errors="coerce").fillna(0.0)
+    return {
+        "amount_p95": float(amount.quantile(0.95)) if len(amount) > 0 else 200000.0,
+        "amount_p99": float(amount.quantile(0.99)) if len(amount) > 0 else 500000.0,
+        "amount_mean": float(amount.mean()) if len(amount) > 0 else 0.0,
+        "amount_std": float(amount.std()) if len(amount) > 1 else 1.0,
+    }
 
 
 def _add_amount_bin_partition(series: pd.Series) -> pd.Series:
@@ -99,13 +127,21 @@ def engineer_features_df(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def engineer_features_pandas(df: pd.DataFrame) -> pd.DataFrame:
+def engineer_features_pandas(
+    df: pd.DataFrame,
+    thresholds: dict[str, float] | None = None,
+) -> pd.DataFrame:
     """Apply the same feature engineering logic in pandas for inference.
 
     Parameters
     ----------
     df : pd.DataFrame
         Input standardized dataframe.
+    thresholds : dict[str, float] | None
+        Training-time thresholds (amount_p95, amount_p99, amount_mean,
+        amount_std). When provided, these are used instead of recomputing
+        from `df` — which is essential for single-row or small-batch
+        inference where inference-data statistics are meaningless.
 
     Returns
     -------
@@ -127,11 +163,18 @@ def engineer_features_pandas(df: pd.DataFrame) -> pd.DataFrame:
     bal_change_abs = bal_change.abs()
     med = float(bal_change_abs.dropna().median()) if bal_change_abs.notna().any() else 0.0
 
-    # Percentile thresholds -- use training-time defaults for inference
-    amount_p95 = float(amount.quantile(0.95)) if len(amount) > 1 else 200000
-    amount_p99 = float(amount.quantile(0.99)) if len(amount) > 1 else 500000
-    amount_mean = float(amount.mean()) if len(amount) > 0 else 0.0
-    amount_std = float(amount.std()) if len(amount) > 1 else 1.0
+    if thresholds:
+        # Prefer training-time thresholds to avoid leakage from inference data.
+        amount_p95 = float(thresholds.get("amount_p95", 200000.0))
+        amount_p99 = float(thresholds.get("amount_p99", 500000.0))
+        amount_mean = float(thresholds.get("amount_mean", 0.0))
+        amount_std = float(thresholds.get("amount_std", 1.0))
+    else:
+        # Fallback: recompute from input (degenerate for single-row inference).
+        amount_p95 = float(amount.quantile(0.95)) if len(amount) > 1 else 200000.0
+        amount_p99 = float(amount.quantile(0.99)) if len(amount) > 1 else 500000.0
+        amount_mean = float(amount.mean()) if len(amount) > 0 else 0.0
+        amount_std = float(amount.std()) if len(amount) > 1 else 1.0
 
     out = df.copy()
     out["amount"] = amount
@@ -202,9 +245,14 @@ def main() -> None:
     print(f"[Preprocess] Loading {input_path}")
     df = pd.read_csv(input_path)
 
+    thresholds = compute_feature_thresholds(df)
     features_df = engineer_features_df(df)
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     features_df.to_csv(output_path, index=False)
+
+    thresholds_path = Path(output_path).parent / "feature_thresholds.json"
+    with open(thresholds_path, "w", encoding="utf-8") as f:
+        json.dump(thresholds, f, indent=2)
 
     feature_names = list(features_df.columns)
     shape_rows = int(features_df.shape[0])
@@ -212,6 +260,7 @@ def main() -> None:
     fraud_dist = features_df["is_fraud"].value_counts().to_dict()
 
     print(f"[Preprocess] Saved features to {output_path}")
+    print(f"[Preprocess] Saved thresholds to {thresholds_path}: {thresholds}")
     print(f"[Preprocess] Shape: ({shape_rows}, {len(feature_names)})")
     print(f"[Preprocess] Feature names: {feature_names}")
     print(f"[Preprocess] Null counts: {null_counts}")
