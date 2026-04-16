@@ -43,8 +43,26 @@ def predict_dataframe(input_df: pd.DataFrame, model_path: str = "models/fraud_mo
     -------
     pd.DataFrame
         Fraud probability and class predictions.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the model artifact file does not exist.
+    ValueError
+        If the model artifact is missing required keys or the input dataframe is empty.
     """
+    if not Path(model_path).exists():
+        raise FileNotFoundError(f"[Predict] Model artifact not found: {model_path}")
+
+    if input_df is None or len(input_df) == 0:
+        raise ValueError("[Predict] Input dataframe is empty; nothing to predict.")
+
     artifact = joblib.load(model_path)
+    if not isinstance(artifact, dict) or "model" not in artifact or "feature_columns" not in artifact:
+        raise ValueError(
+            "[Predict] Model artifact is invalid: expected dict with 'model' and 'feature_columns' keys."
+        )
+
     model = artifact["model"]
     feature_columns = artifact["feature_columns"]
 

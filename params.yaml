@@ -13,8 +13,6 @@ data:
 
 fdb:
   dataset_key: sparkov
-  enable_cache: true
-  cache_dir: data/raw/fdb_cache
 
 combine:
   paysim_path: data/raw/paysim.csv
