@@ -223,7 +223,7 @@ with st.sidebar:
         <p style="color: #94a3b8; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.75rem;">POWERED BY</p>
         <p style="color: #64748b; font-size: 0.8rem; line-height: 1.8;">
         XGBoost Classifier<br>
-        Dask Computing<br>
+        Pandas + scikit-learn<br>
         DVC Pipeline
         </p>
     </div>
@@ -245,10 +245,12 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Load metrics once
+# Load metrics once (resolve path relative to this file, not cwd)
+PROJECT_ROOT = Path(__file__).resolve().parent
+metrics_file = PROJECT_ROOT / "metrics" / "scores.json"
 scores = {}
-if Path("metrics/scores.json").exists():
-    with open("metrics/scores.json") as f:
+if metrics_file.exists():
+    with open(metrics_file) as f:
         scores = json.load(f)
 
 # KPI Row
@@ -308,7 +310,7 @@ with col1:
 with col2:
     st.metric(label="Algorithm", value="XGBoost", delta="v2.0.3")
 with col3:
-    st.metric(label="Processing", value="Dask", delta="Distributed")
+    st.metric(label="Processing", value="Pandas", delta="In-memory")
 
 st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)
 
@@ -375,7 +377,7 @@ with col1:
     | Algorithm | Gradient Boosting (XGBoost) |
     | Training Data | PaySim + Sparkov datasets |
     | Features | 20+ engineered fraud indicators |
-    | Framework | Dask parallel computing |
+    | Framework | Pandas + scikit-learn |
     | Pipeline | DVC version control |
     """)
 
@@ -397,6 +399,6 @@ with col2:
 
 st.markdown("""
 <div class="footer-text">
-    SENTINEL Fraud Detection System v2.0 | XGBoost + Dask + DVC Pipeline
+    SENTINEL Fraud Detection System v2.0 | XGBoost + Pandas + DVC Pipeline
 </div>
 """, unsafe_allow_html=True)

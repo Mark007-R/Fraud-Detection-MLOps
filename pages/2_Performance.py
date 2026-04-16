@@ -99,7 +99,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-metrics_file = Path("metrics/scores.json")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+metrics_file = PROJECT_ROOT / "metrics" / "scores.json"
 
 if not metrics_file.exists():
     st.warning("No metrics found. Please run model evaluation first.")
@@ -380,7 +381,7 @@ with tab5:
         st.markdown("#### Model Configuration")
         config_df = pd.DataFrame({
             "Setting": ["Algorithm", "Model Version", "Training Framework", "Data Processing"],
-            "Value": ["XGBoost", "v2.0.3", "DVC", "Dask"],
+            "Value": ["XGBoost", "v2.0.3", "DVC", "Pandas"],
         })
         st.dataframe(config_df, use_container_width=True, hide_index=True)
 
