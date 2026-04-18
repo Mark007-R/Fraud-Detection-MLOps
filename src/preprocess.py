@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.config import load_params
 
