@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 
 import joblib
 import pandas as pd
@@ -18,6 +19,9 @@ from sklearn.metrics import (
     roc_auc_score,
     roc_curve,
 )
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.config import load_params
 
