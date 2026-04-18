@@ -5,10 +5,14 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 from typing import Any
 
 import joblib
 import pandas as pd
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.preprocess import align_feature_columns, engineer_features_pandas
 
