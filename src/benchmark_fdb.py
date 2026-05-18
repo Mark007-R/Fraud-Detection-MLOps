@@ -159,10 +159,23 @@ def main() -> None:
             "[Benchmark] FDB package not installed. Install with: "
             "pip install git+https://github.com/amazon-science/fraud-dataset-benchmark.git"
         )
-        sparkov_local = Path("data/raw/sparkov.csv")
-        if not sparkov_local.exists():
-            raise FileNotFoundError("[Benchmark] No FDB package and no local sparkov.csv fallback.")
-        fdb_test = pd.read_csv(sparkov_local)
+        # Prefer sparkov_test.csv: it's the chronologically held-out split
+        # (2020-06-21 onward) — fully after the train file's date range.
+        # Falling back to sparkov.csv would test on the training data
+        # itself, which is what inflated the prior 0.921 AUC claim.
+        sparkov_test_local = Path("data/raw/sparkov_test.csv")
+        sparkov_full_local = Path("data/raw/sparkov.csv")
+        if sparkov_test_local.exists():
+            print(f"[Benchmark] Using held-out file {sparkov_test_local}")
+            fdb_test = pd.read_csv(sparkov_test_local)
+        elif sparkov_full_local.exists():
+            print(
+                f"[Benchmark] WARNING: held-out sparkov_test.csv missing; "
+                f"falling back to {sparkov_full_local} (overlaps training data)."
+            )
+            fdb_test = pd.read_csv(sparkov_full_local)
+        else:
+            raise FileNotFoundError("[Benchmark] No FDB package and no local sparkov fallback files.")
     except Exception as exc:
         fdb_available = False
         print(f"[Benchmark] FDB standardized load failed: {exc}. Falling back to local sparkov.csv")

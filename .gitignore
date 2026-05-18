@@ -27,3 +27,11 @@ reports/*.svg
 .idea/
 .DS_Store
 Thumbs.db
+
+# MLflow tracking (local store)
+mlflow.db
+mlruns/
+mlartifacts/
+
+# Sprint results (kept gitignored except json/md; large artifacts excluded)
+results/samples/
