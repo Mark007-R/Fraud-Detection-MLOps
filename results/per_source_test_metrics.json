@@ -1,0 +1,19 @@
+{
+  "combined_temporal_test_auc": 0.998906455221076,
+  "combined_temporal_test_ap": 0.8279930122935094,
+  "combined_test_rows": 1531859,
+  "per_source": {
+    "source_paysim": {
+      "rows": 1272524,
+      "fraud_rate": 0.0033429624902948786,
+      "auc": 0.9996496801248486,
+      "ap": 0.9170236503085837
+    },
+    "source_sparkov": {
+      "rows": 259335,
+      "fraud_rate": 0.005930553145545337,
+      "auc": 0.99660781623355,
+      "ap": 0.8090229874738804
+    }
+  }
+}

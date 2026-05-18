@@ -45,13 +45,20 @@ def _normalize_sparkov(df: pd.DataFrame) -> pd.DataFrame:
         dt = pd.to_datetime(df["trans_date_trans_time"], errors="coerce")
         hour = dt.dt.hour.fillna(0).astype("int64")
         day = dt.dt.day.fillna(1).astype("int64")
+        ts = (dt.astype("int64") // 10**9).fillna(0).astype("int64")
     elif "TX_TIMESTAMP" in cols:
         dt = pd.to_datetime(df["TX_TIMESTAMP"], errors="coerce")
         hour = dt.dt.hour.fillna(0).astype("int64")
         day = dt.dt.day.fillna(1).astype("int64")
+        ts = (dt.astype("int64") // 10**9).fillna(0).astype("int64")
+    elif "unix_time" in cols:
+        hour = (pd.to_numeric(df[amount_col], errors="coerce").fillna(0.0) * 0).astype("int64")
+        day = ((pd.to_numeric(df[amount_col], errors="coerce").fillna(0.0) * 0) + 1).astype("int64")
+        ts = pd.to_numeric(df["unix_time"], errors="coerce").fillna(0).astype("int64")
     else:
         hour = (pd.to_numeric(df[amount_col], errors="coerce").fillna(0.0) * 0).astype("int64")
         day = ((pd.to_numeric(df[amount_col], errors="coerce").fillna(0.0) * 0) + 1).astype("int64")
+        ts = (pd.to_numeric(df[amount_col], errors="coerce").fillna(0.0) * 0).astype("int64")
 
     out = df.assign(
         amount=pd.to_numeric(df[amount_col], errors="coerce").fillna(0.0),
@@ -63,6 +70,7 @@ def _normalize_sparkov(df: pd.DataFrame) -> pd.DataFrame:
         balance_ratio=float("nan"),
         has_balance_info=0,
         source="sparkov",
+        txn_timestamp=ts,
     )
 
     return out[
@@ -76,6 +84,7 @@ def _normalize_sparkov(df: pd.DataFrame) -> pd.DataFrame:
             "balance_ratio",
             "has_balance_info",
             "source",
+            "txn_timestamp",
         ]
     ]
 
@@ -112,9 +121,10 @@ def _normalize_paysim(df: pd.DataFrame) -> pd.DataFrame:
         balance_ratio=(new_bal / (old_bal + 1.0)),
         has_balance_info=1,
         source="paysim",
+        txn_timestamp=(step_numeric * 3600).astype("int64"),
     )
 
-    return out[["amount", "is_fraud", "transaction_type", "hour_of_day", "day_of_month", "balance_change_orig", "balance_ratio", "has_balance_info", "source"]]
+    return out[["amount", "is_fraud", "transaction_type", "hour_of_day", "day_of_month", "balance_change_orig", "balance_ratio", "has_balance_info", "source", "txn_timestamp"]]
 
 
 def _validate_combined(df: pd.DataFrame) -> None:
@@ -131,7 +141,7 @@ def _validate_combined(df: pd.DataFrame) -> None:
         If validation checks fail.
     """
     required = {"amount", "is_fraud", "transaction_type", "hour_of_day",
-                "day_of_month", "source"}
+                "day_of_month", "source", "txn_timestamp"}
     missing = required - set(df.columns)
     if missing:
         raise ValueError(f"[Combine] Missing columns after merge: {sorted(missing)}")
@@ -179,7 +189,10 @@ def main() -> None:
     print(f"[Combine] Sparkov standardized: {sparkov_std.shape}")
 
     combined = pd.concat([paysim_std, sparkov_std], axis=0, ignore_index=True)
-    combined = combined.sample(frac=1.0, random_state=42).reset_index(drop=True)
+    # Sort by (source, txn_timestamp) to preserve per-source chronology.
+    # Day 1 fix: previously this was a random shuffle, which destroyed time
+    # ordering and made temporal splits impossible downstream in train.py.
+    combined = combined.sort_values(["source", "txn_timestamp"], kind="mergesort").reset_index(drop=True)
 
     _validate_combined(combined)
 

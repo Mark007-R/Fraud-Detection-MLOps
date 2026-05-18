@@ -1,25 +1,25 @@
 {
-  "dataset_key": "sparknov",
+  "dataset_key": "sparkov",
   "fdb_standardized": false,
-  "our_model_auc": 0.9210076846056613,
+  "our_model_auc": 0.7948955994984168,
   "baselines": {
     "AutoGluon": {
       "baseline_auc": 0.952,
-      "our_auc": 0.9210076846056613,
+      "our_auc": 0.7948955994984168,
       "status": "BELOW",
-      "delta": -0.030992
+      "delta": -0.157104
     },
     "H2O AutoML": {
       "baseline_auc": 0.947,
-      "our_auc": 0.9210076846056613,
+      "our_auc": 0.7948955994984168,
       "status": "BELOW",
-      "delta": -0.025992
+      "delta": -0.152104
     },
     "AutoSklearn": {
       "baseline_auc": 0.931,
-      "our_auc": 0.9210076846056613,
+      "our_auc": 0.7948955994984168,
       "status": "BELOW",
-      "delta": -0.009992
+      "delta": -0.136104
     }
   }
 }

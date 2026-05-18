@@ -84,6 +84,7 @@ def engineer_features_df(df: pd.DataFrame) -> pd.DataFrame:
         "balance_ratio",
         "has_balance_info",
         "source",
+        "txn_timestamp",
     }
     missing = required - set(df.columns)
     if missing:
@@ -92,6 +93,7 @@ def engineer_features_df(df: pd.DataFrame) -> pd.DataFrame:
     amount = pd.to_numeric(df["amount"], errors="coerce").fillna(0.0)
     hour = pd.to_numeric(df["hour_of_day"], errors="coerce").fillna(0).astype("int64")
     day = pd.to_numeric(df["day_of_month"], errors="coerce").fillna(1).astype("int64")
+    ts = pd.to_numeric(df["txn_timestamp"], errors="coerce").fillna(0).astype("int64")
 
     bal_change = pd.to_numeric(df["balance_change_orig"], errors="coerce")
     bal_ratio = pd.to_numeric(df["balance_ratio"], errors="coerce")
@@ -109,6 +111,7 @@ def engineer_features_df(df: pd.DataFrame) -> pd.DataFrame:
     out = df.assign(
         amount=amount,
         is_fraud=pd.to_numeric(df["is_fraud"], errors="coerce").fillna(0).astype("int64"),
+        txn_timestamp=ts,
         tx_amount_log=np.log1p(amount),
         is_high_amount=(amount > 200000).astype("int64"),
         is_p95_amount=(amount > amount_p95).astype("int64"),
