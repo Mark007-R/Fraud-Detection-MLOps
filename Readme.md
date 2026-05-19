@@ -2,9 +2,48 @@
 
 End-to-end fraud detection project for payment transactions with:
 - reproducible ML pipelines using DVC
-- XGBoost model training and evaluation
+- XGBoost model training and evaluation with MLflow tracking + registry
 - optional Amazon Fraud Dataset Benchmark (FDB) integration
+- distributed (Dask) and single-node (Pandas) behavioral feature engineering, bit-exact between backends
 - multi-page Streamlit dashboard for prediction and analytics
+
+## 21-Day Production MLOps Upgrade Sprint (May 18 -- May 24, 2026)
+
+The current honest sparkov AUC is **0.7949**, not the pre-fix 0.921 that early commits reported. The 0.921 number was inflated by two stacked leakage paths in the Day-1 audit; replacing them with a per-source temporal split and a held-out test file dropped the score by ~13pp. The story of the sprint *is* that fix.
+
+### Day 1 (2026-05-18) -- Audit + temporal-split fix + MLflow baseline
+
+- **Audit:** `docs/MLOPS_AUDIT.md` documents the pre-fix pipeline.
+- **Leakage path 1:** `src/train.py` previously used `train_test_split(stratify=y)` -- a random split. Fraud transactions are temporal; a random split leaks future patterns into training. Fixed by `temporal_split_per_source` (sort each source by `txn_timestamp`, take the last `test_size` fraction as test). See `docs/DATA_SPLIT.md`.
+- **Leakage path 2:** `src/benchmark_fdb.py` fell back to `data/raw/sparkov.csv` -- the same file used for training. Fixed by preferring the held-out `data/raw/sparkov_test.csv` (Jun-Dec 2020, never seen in training).
+- **MLflow:** every training run is now wrapped in `mlflow.start_run()` against a local sqlite store (`sqlite:///mlflow.db`). Params, metrics, the XGBoost artifact, and the joblib model file are all logged. See `results/baseline_metrics.json` for the full audit trail.
+
+| Metric                                    | Pre-fix (leaked) | Post-fix (honest) | Delta    |
+|-------------------------------------------|-----------------:|------------------:|---------:|
+| Sparkov benchmark AUC                     | 0.9210           | 0.7949            | -0.126   |
+| Delta vs AutoGluon 0.952                  | -0.031           | -0.157            | -0.126   |
+| Combined-test AUC (in-distribution slice) | n/a              | 0.9989            | --       |
+| Combined-test AP (in-distribution slice)  | n/a              | 0.8280            | --       |
+
+The held-out 0.7949 is the project's honest number against AutoML baselines. The 0.999 combined-test AUC is the in-distribution slice (paysim dominates with its near-deterministic balance signal), reported for completeness.
+
+### Day 2 (2026-05-19) -- Distributed feature engineering + MLflow registry rollback bench
+
+- **`src/features/engineer.py`** -- per-card behavioral features (spending velocity, amount z-score-by-card, distance-to-home haversine, time-of-day buckets) in two backends: `engineer_pandas` and `engineer_dask`. Numerically identical within fp noise (max abs diff 5.5e-12).
+- **`src/features/benchmark.py`** -- throughput sweep at 100K / 500K / 1M rows; results in `results/throughput_speedup.csv`. Honest finding: **Pandas wins 4.4-10x at every tested scale on local hardware** because the single-pass numpy `groupby().transform` has no shuffle cost to amortise at sub-1M rows. Dask's throughput climbs as N grows (112K -> 260K rows/sec), so the crossover lives at scales where Pandas hits memory pressure -- the value of the Dask path is "scales out when Pandas runs out of RAM," not "faster at fixed size." The hard win is bit-exact determinism: switching backends never changes a fraud decision.
+- **`src/registry/promote.py` + `src/registry/rollback.py`** -- alias-based MLflow registry CLIs. `@production` aliases (MLflow 2.9+) replace the deprecated "Production" stage.
+- **`src/registry/bench_rollback.py`** -- trains two genuinely-different XGBoost versions on a 200K-row temporal slice, flip-flops `@production` five times, measures latency:
+
+| Operation                                              | Median   | Max      |
+|--------------------------------------------------------|---------:|---------:|
+| Alias flip (`set_registered_model_alias`)              | 4.0 ms   | 4.7 ms   |
+| End-to-end rollback (flip + audit-tag + previous-alias)| 12 ms    | 14 ms    |
+
+The runbook number ops cares about is the alias flip alone -- one sqlite write, no model upload, no eval gate. Sub-second rollback is achievable even with a remote registry because the path is bounded by a single HTTP call.
+
+**Accidental finding from the bench:** v2 (deeper XGB, n=200 / d=6) underperforms v1 (shallow, n=50 / d=3) on the 200K temporal slice by 1.2pp AUC and 14pp AP. The deeper model overfits. This is the rollback path's reason for existing, demonstrated by accident in the experiment.
+
+Day-by-day reports live in `reports/day0NN_phaseN_report.md`. Full progress log in the parent directory's `PROGRESS_LOG.md`.
 
 ## What This Project Does
 
@@ -41,7 +80,29 @@ Sentinel/
 |   |-- train.py
 |   |-- evaluate.py
 |   |-- predict.py
-|   `-- benchmark_fdb.py
+|   |-- benchmark_fdb.py
+|   |-- features/                 # Day 2 -- Dask + Pandas behavioral features
+|   |   |-- engineer.py
+|   |   `-- benchmark.py
+|   `-- registry/                 # Day 2 -- MLflow promote/rollback CLI
+|       |-- promote.py
+|       |-- rollback.py
+|       `-- bench_rollback.py
+|-- docs/                         # Day 1 audit + data-split rationale
+|   |-- MLOPS_AUDIT.md
+|   `-- DATA_SPLIT.md
+|-- results/                      # Sprint deliverables
+|   |-- baseline_metrics.json
+|   |-- throughput_speedup.csv
+|   |-- registry_rollback_times.csv
+|   `-- samples/features/
+|-- reports/
+|   |-- day01_phase1_report.md
+|   |-- day02_phase2a_report.md
+|   |-- confusion_matrix.svg
+|   `-- roc_curve.svg
+|-- mlruns/                       # MLflow tracking (gitignored)
+|-- mlflow.db                     # MLflow sqlite store (gitignored)
 |-- pages/
 |   |-- 1_Predict.py
 |   |-- 2_Performance.py
@@ -96,7 +157,7 @@ Defined in dvc.yaml:
 
 2. combine
 - Script: src/combine_datasets.py
-- Purpose: normalize PaySim and Sparkov columns into one schema and shuffle
+- Purpose: normalize PaySim and Sparkov columns into one schema, attach `txn_timestamp`, and sort by (source, timestamp) -- chronological order is required by the Day-1 temporal-split fix in `train.py`. The pre-fix random shuffle has been removed.
 - Output: data/processed/combined_transactions.csv
 
 3. preprocess
@@ -106,8 +167,8 @@ Defined in dvc.yaml:
 
 4. train
 - Script: src/train.py
-- Purpose: train XGBoost model and persist holdout test split
-- Outputs: models/fraud_model.pkl, data/processed/X_test.csv, data/processed/y_test.csv
+- Purpose: train XGBoost model with **per-source temporal split** (Day-1 fix), MLflow-tracked run (params + metrics + xgboost artifact logged), and persist holdout test split.
+- Outputs: models/fraud_model.pkl, data/processed/X_test.csv, data/processed/y_test.csv, MLflow run under experiment `sentinel-day01-temporal-split`
 
 5. evaluate
 - Script: src/evaluate.py
@@ -117,8 +178,23 @@ Defined in dvc.yaml:
 
 6. benchmark_fdb
 - Script: src/benchmark_fdb.py
-- Purpose: compare model AUC against fixed baseline references
+- Purpose: compare model AUC against fixed baseline references, **preferring the held-out `data/raw/sparkov_test.csv`** (Day-1 fix; the previous fallback to `sparkov.csv` was the training set and produced inflated scores).
 - Metrics: metrics/fdb_benchmark.json
+
+### Out-of-pipeline modules (Day 2)
+
+These are additive helpers that do not replace any DVC stage:
+
+- **Dask feature engineer (`src/features/engineer.py`)** -- backend-parallel implementation of the per-card behavioral features. Run the throughput sweep with `python -m src.features.benchmark --sizes 100000 500000 1000000`.
+- **MLflow registry CLIs (`src/registry/{promote,rollback}.py`)** -- alias-based promote/rollback against the local sqlite MLflow store. Run end-to-end:
+  ```bash
+  python -m src.registry.promote --experiment sentinel-day01-temporal-split --alias production
+  python -m src.registry.rollback --target-version 1
+  ```
+- **Promote/rollback bench (`src/registry/bench_rollback.py`)** -- trains v1 + v2 and times the alias flip:
+  ```bash
+  python -m src.registry.bench_rollback --repeats 5 --sample-rows 200000
+  ```
 
 ## Installation
 
@@ -267,24 +343,49 @@ Primary artifacts created by the pipeline:
 **Transaction Analysis — Pattern & Anomaly Detection**
 ![Transaction Analysis - Patterns](screenshots/transactions2.png)
 
-## Current Metrics Snapshot
+## Current Metrics Snapshot (honest, post Day-1 temporal-split fix)
 
-From metrics/scores.json in this workspace:
-- precision: 0.3370
-- recall: 0.9622
-- f1_score: 0.4992
-- accuracy: 0.9960
-- auc_roc: 0.9990
-- average_precision: 0.8628
+From `results/baseline_metrics.json`:
+
+### Held-out sparkov_test (Jun-Dec 2020, never seen in training)
+
+| Metric             | Value  | Notes |
+|--------------------|-------:|-------|
+| auc_roc            | 0.7949 | The project's honest headline number |
+| Delta vs AutoGluon | -0.157 | Below the 0.952 AutoML baseline; closing this is the Day-3/5 goal |
+| Delta vs H2O       | -0.152 | Below the 0.947 baseline |
+| Delta vs AutoSklearn | -0.136 | Below the 0.931 baseline |
+
+### Combined temporal test (last 20% per source, in-distribution)
+
+| Metric            | Value  |
+|-------------------|-------:|
+| accuracy          | 0.9966 |
+| auc_roc           | 0.9989 |
+| average_precision | 0.8280 |
+| precision         | 0.5268 |
+| recall            | 0.8974 |
+| f1_score          | 0.6639 |
 
 Interpretation:
-- very high recall and AUC indicate strong ranking/detection capability
-- lower precision indicates many false positives at default threshold
+- The combined-test AUC of 0.999 is inflated by PaySim's near-deterministic `balance_change_orig` signal (PaySim is 83% of combined data). PaySim test AUC is 0.9997, Sparkov train-time test AUC is 0.9966 -- both are *in-distribution*. The honest cross-time number is the 0.7949 on the held-out sparkov_test file.
+- The ~20pp gap between in-distribution test (0.999) and held-out (0.795) quantifies real distribution shift between training months and Jun-Dec 2020 -- and that's the gap auto-retrain (Day 3) is built to close.
+
+### Day 2 Production MLOps additions
+
+| Metric                                                | Value      |
+|-------------------------------------------------------|-----------:|
+| Pandas behavioral features throughput (1M rows)       | 1.15M rows/sec |
+| Dask behavioral features throughput (1M rows, 16 parts)| 260K rows/sec |
+| Backend determinism (max abs feature diff)            | 5.5e-12    |
+| MLflow alias flip (median over 5 events)              | 4 ms       |
+| MLflow end-to-end rollback (median)                   | 12 ms      |
 
 ## Notes and Limitations
 
-- Lower precision (0.34) at the default 0.5 threshold indicates many false positives; adjusting the classification threshold can improve precision at the cost of recall.
-- The FDB benchmark stage requires the optional `fraud-dataset-benchmark` package and will fall back to local Sparkov data if unavailable.
+- Lower precision (0.53) at the default 0.5 threshold indicates false positives; adjusting the classification threshold can improve precision at the cost of recall. The PR curve is in `reports/`.
+- The FDB benchmark stage prefers `data/raw/sparkov_test.csv` (held-out Jun-Dec 2020) as the test slice. If the optional `fraud-dataset-benchmark` package is installed it can pull the held-out file directly; otherwise the local copy is used.
+- The Day-2 Dask throughput sweep loses to Pandas at 100K-1M rows on a single-machine setup. Dask earns its place at scales where Pandas hits memory pressure, not at sub-1M rows where single-pass numpy dominates.
 
 ## Useful Commands
 
@@ -296,9 +397,11 @@ dvc metrics diff
 
 ## Tech Stack
 
-- Python, pandas, numpy
+- Python 3.11, pandas, numpy
 - scikit-learn, XGBoost, imbalanced-learn
-- DVC
+- DVC for pipeline reproducibility
+- **MLflow** for experiment tracking + model registry (sqlite-backed locally)
+- **Dask** for distributed feature engineering (bit-exact with Pandas)
 - Streamlit, Plotly, Altair
 - (optional) Amazon Fraud Dataset Benchmark
 
