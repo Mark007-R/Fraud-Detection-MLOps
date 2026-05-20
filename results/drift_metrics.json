@@ -1,0 +1,43 @@
+{
+  "captured_on": "2026-05-20T12:18:00Z",
+  "day": 3,
+  "phase": "2b — drift detection + auto-retrain trigger + champion pick",
+  "champion": {
+    "drift_detector": "KS (per-feature, p<0.01 AND stat>=0.15) OR'd with PSI on predicted probability (threshold 0.25)",
+    "retrain_trigger": "N=2 consecutive firing days; retrain on first_fired_day..d-1; shadow eval on day d; auto-promote if shadow_auprc >= prod_auprc - 0.01"
+  },
+  "detector_metrics": {
+    "true_drift_days": [23, 24, 25, 26, 27, 28, 29],
+    "predicted_drift_days": [23, 24, 25, 26, 27, 28, 29],
+    "precision": 1.0,
+    "recall": 1.0,
+    "first_fired_day": 23,
+    "detection_lag_days_zero_debounce": 0,
+    "pre_injection_proba_psi_max": 0.0968,
+    "post_injection_proba_psi_min": 2.9164,
+    "psi_ratio_post_over_pre": 30.13,
+    "amount_ks_baseline_max": 0.0425,
+    "amount_ks_post_injection_min": 0.978
+  },
+  "trigger_metrics": {
+    "n_consecutive_days_debounce": 2,
+    "promote_tolerance_auprc": 0.01,
+    "n_retrain_events": 3,
+    "n_promoted": 3,
+    "first_trigger_day": 24,
+    "detection_lag_days_with_debounce": 1,
+    "end_to_end_seconds_median": 6.8528,
+    "end_to_end_seconds_max": 30.0930,
+    "end_to_end_seconds_min": 6.4964,
+    "fit_seconds_median": 0.677,
+    "shadow_eval_seconds_median": 0.038,
+    "register_alias_seconds_median": 0.0305,
+    "shadow_auprc_first_event": 0.5520,
+    "prod_auprc_collapse_first_event": 0.0551,
+    "auprc_recovery_first_event": 0.4969,
+    "shadow_auprc_second_event": 0.8050,
+    "prod_auprc_second_event": 0.7561,
+    "auprc_recovery_second_event": 0.0489
+  },
+  "interpretation": "The detector reports precision 1.0 / recall 1.0 against the +2sigma injection. The auto-retrain trigger costs 1 extra day on first detection (N=2 debounce) but turns into 6.8s median end-to-end from drift-detection to traffic-on-new-model. Cold start adds ~25s on the first event (MLflow + XGBoost native init); steady-state retrains land in ~7s. The MLOps story: stale model AUPRC collapsed from baseline to 0.055 under the synthetic drift; auto-retrain restored it to 0.55 on the held-out shadow day and pushed it to 0.81 on the next event. Without the trigger the model would have stayed at 0.055."
+}

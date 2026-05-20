@@ -1,0 +1,9 @@
+rank,strategy,axis,primary_metric,value,secondary_metric,secondary_value,notes
+1,KS + PSI drift detector,drift_quality,precision_at_2sigma,1.0,recall_at_2sigma,1.0,Synthetic 30-day replay; +2sigma shift on `amount` from day 23; fired exactly days 23..29
+2,KS + PSI drift detector,drift_quality,proba_psi_pre_injection_max,0.097,proba_psi_post_injection_min,2.916,30x gap between clean and drifted distributions on the model-output PSI
+3,Auto-retrain trigger (N=2 debounce),end_to_end_latency,seconds_detect_to_traffic_median,6.85,seconds_detect_to_traffic_p100,30.09,3 retrain events across 7 firing days; cold start adds ~25s on first event
+4,Auto-retrain trigger,retrain_quality,shadow_auprc_recovery,0.552,prod_auprc_collapse,0.055,AUPRC recovered from 0.055 (stale model on drifted distribution) to 0.552 on the held-out shadow day 24
+5,MLflow registry alias-flip (Day 2),rollback_latency,alias_flip_median_seconds,0.0039,alias_flip_p100_seconds,0.0047,5 flip-flops on local sqlite store; sub-5ms switching latency
+6,MLflow registry end-to-end rollback (Day 2),rollback_latency,total_median_seconds,0.0119,total_p100_seconds,0.0139,Alias + audit tag + previous-alias bookkeeping; sub-15ms total
+7,Pandas behavioral feature engineer (Day 2),throughput,rows_per_sec_at_1M,1152848,wall_seconds_at_1M,0.87,Single-threaded numpy wins at sub-1M scale
+8,Dask behavioral feature engineer (Day 2),throughput,rows_per_sec_at_1M,259862,wall_seconds_at_1M,3.85,Loses on speed at 1M; wins on memory headroom + bit-exact equivalence (5.5e-12)
