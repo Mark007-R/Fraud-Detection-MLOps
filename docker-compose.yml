@@ -1,0 +1,47 @@
+version: "3.9"
+
+# Sentinel telemetry stack — Day 4 Phase 3 (2026-05-21).
+# Brings up the Postgres backing store the FastAPI service writes to.
+# MLflow remains on the local sqlite store (mlflow.db) for now — Day 7
+# graduates the full stack to docker compose.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sentinel-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sentinel}
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel_telemetry}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - sentinel_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sentinel} -d ${POSTGRES_DB:-sentinel_telemetry}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Convenience: serve the FastAPI app off the same machine that owns Postgres.
+  # Day 7 layers MLflow and Redis on top.
+  api:
+    profiles: ["serving"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sentinel-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SENTINEL_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-sentinel}:${POSTGRES_PASSWORD:-sentinel}@postgres:5432/${POSTGRES_DB:-sentinel_telemetry}
+      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-sqlite:////app/mlflow.db}
+      SENTINEL_DISABLE_SHADOW: "${SENTINEL_DISABLE_SHADOW:-1}"
+    ports:
+      - "${API_PORT:-8000}:8000"
+
+volumes:
+  sentinel_pgdata:
