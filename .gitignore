@@ -9,14 +9,15 @@ __pycache__/
 # Notebook cache
 .ipynb_checkpoints/
 
-# Large generated artifacts
-data/
-models/
+# Large generated artifacts — anchor to repo root so src/data/ stays tracked
+/data/
+/models/
 reports/*.svg
 
-# Secrets and environment
+# Secrets and environment — keep .env.example tracked (template for contributors)
 .env
 .env.*
+!.env.example
 .streamlit/secrets.toml
 
 # Logs
@@ -35,3 +36,11 @@ mlartifacts/
 
 # Sprint results (kept gitignored except json/md; large artifacts excluded)
 results/samples/
+
+# Day 4 telemetry sqlite fallback
+/data/telemetry.sqlite
+/data/telemetry.sqlite-*
+/data/telemetry_*.sqlite
+
+# Postgres docker volume (locally bound or for clean rebuild)
+.pgdata/
