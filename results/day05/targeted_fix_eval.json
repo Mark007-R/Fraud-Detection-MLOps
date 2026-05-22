@@ -1,0 +1,80 @@
+{
+  "model_artifact": "models\\fraud_model_tuned_fixed.pkl",
+  "best_params": {
+    "n_estimators": 400,
+    "max_depth": 5,
+    "learning_rate": 0.21962223412218645,
+    "scale_pos_weight": 14.825891090875654,
+    "subsample": 0.8786573830716804,
+    "colsample_bytree": 0.7269111389090186,
+    "reg_alpha": 0.0006080567474434866,
+    "reg_lambda": 9.905911841286033
+  },
+  "sample_weight_mode": "source_balanced",
+  "decision_threshold_tau_star": 0.8939489722251892,
+  "in_distribution_per_source": {
+    "source_paysim": {
+      "rows": 1272524,
+      "auc": 0.9994267138935031,
+      "average_precision": 0.8848017339622571
+    },
+    "source_sparkov": {
+      "rows": 259335,
+      "auc": 0.9971775606973103,
+      "average_precision": 0.8471759349037878
+    }
+  },
+  "out_of_time_sparkov_test_csv": {
+    "rows": 555719,
+    "fraud_rate": 0.0038598644278853163,
+    "auc": 0.951958845551572,
+    "average_precision": 0.20830353279765584,
+    "at_threshold_0.5": {
+      "accuracy": 0.9944954194475986,
+      "precision": 0.2744323790720632,
+      "recall": 0.2592074592074592,
+      "f1": 0.2666027331575162,
+      "confusion_matrix": [
+        [
+          552104,
+          1470
+        ],
+        [
+          1589,
+          556
+        ]
+      ]
+    },
+    "at_threshold_tau_star": {
+      "accuracy": 0.9962481038078598,
+      "precision": 0.5526315789473685,
+      "recall": 0.14685314685314685,
+      "f1": 0.23204419889502761,
+      "confusion_matrix": [
+        [
+          553319,
+          255
+        ],
+        [
+          1830,
+          315
+        ]
+      ]
+    }
+  },
+  "comparison": {
+    "day1_honest_baseline_oot_auc": 0.794896,
+    "day5_tuned_only_oot_auc": 0.91538,
+    "day5_tuned_plus_fix_oot_auc": 0.951958845551572,
+    "autogluon_baseline_oot_auc": 0.952,
+    "lift_vs_tuned_only": 0.03657884555157198,
+    "lift_vs_day1": 0.1570628455515719,
+    "delta_vs_autogluon": -4.115444842800464e-05
+  },
+  "recall_lift_at_tau_star": {
+    "tuned_only_recall_at_0.5": 0.04289,
+    "fixed_recall_at_0.5": 0.2592074592074592,
+    "fixed_recall_at_tau_star": 0.14685314685314685,
+    "recall_uplift_pct_points": 10.396314685314685
+  }
+}
