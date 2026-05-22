@@ -1,0 +1,22 @@
+{
+  "best_trial_number": 25,
+  "best_value_test_oot_sparkov_auc": 0.9644356515996079,
+  "best_params": {
+    "n_estimators": 400,
+    "max_depth": 5,
+    "learning_rate": 0.21962223412218645,
+    "scale_pos_weight": 14.825891090875654,
+    "subsample": 0.8786573830716804,
+    "colsample_bytree": 0.7269111389090186,
+    "reg_alpha": 0.0006080567474434866,
+    "reg_lambda": 9.905911841286033
+  },
+  "n_trials": 30,
+  "tuning_train_rows": 409927,
+  "tuning_negatives_cap": 400000,
+  "sweep_seconds": 598.7224934101105,
+  "honest_baseline_sparkov_test_auc": 0.794896,
+  "autogluon_baseline_auc": 0.952,
+  "delta_vs_autogluon": 0.012435651599607911,
+  "delta_vs_day1_honest": 0.16953965159960782
+}
