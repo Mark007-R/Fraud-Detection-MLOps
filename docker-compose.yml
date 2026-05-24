@@ -1,9 +1,13 @@
 version: "3.9"
 
-# Sentinel telemetry stack — Day 4 Phase 3 (2026-05-21).
-# Brings up the Postgres backing store the FastAPI service writes to.
-# MLflow remains on the local sqlite store (mlflow.db) for now — Day 7
-# graduates the full stack to docker compose.
+# Sentinel full MLOps stack -- Day 7 Phase 6 (2026-05-24).
+# One `docker compose up` brings the entire stack: Postgres telemetry,
+# MLflow tracking + registry, Redis cache, and the FastAPI serving image.
+#
+# Day-4 introduced this file with Postgres + a profiled API service; Day-7
+# layers MLflow (tracking + registry, backed by its own Postgres database
+# on the same instance) and Redis (per-card prediction caching) so the
+# whole production wrapper boots with a single command.
 
 services:
   postgres:
@@ -13,19 +17,74 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-sentinel}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sentinel}
+      # Two logical databases on the same Postgres instance: one for the
+      # telemetry store the FastAPI service writes to, one for MLflow's
+      # tracking + registry backend. POSTGRES_DB creates the first; the
+      # second is bootstrapped by ./scripts/postgres-init.sh.
       POSTGRES_DB: ${POSTGRES_DB:-sentinel_telemetry}
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES:-mlflow}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - sentinel_pgdata:/var/lib/postgresql/data
+      - ./scripts/postgres-init.sh:/docker-entrypoint-initdb.d/00-multi-db.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sentinel} -d ${POSTGRES_DB:-sentinel_telemetry}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # Convenience: serve the FastAPI app off the same machine that owns Postgres.
-  # Day 7 layers MLflow and Redis on top.
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.18.0
+    container_name: sentinel-mlflow
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql+psycopg2://${POSTGRES_USER:-sentinel}:${POSTGRES_PASSWORD:-sentinel}@postgres:5432/mlflow
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlartifacts
+    # ghcr.io/mlflow/mlflow ships without psycopg2; install it once at
+    # container start before launching the server. Artifacts go to a named
+    # volume so they survive container restarts.
+    command: >
+      bash -c "pip install --quiet psycopg2-binary &&
+               mlflow server
+               --host 0.0.0.0
+               --port 5000
+               --backend-store-uri postgresql+psycopg2://${POSTGRES_USER:-sentinel}:${POSTGRES_PASSWORD:-sentinel}@postgres:5432/mlflow
+               --artifacts-destination /mlartifacts"
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    volumes:
+      - sentinel_mlartifacts:/mlartifacts
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://localhost:5000/health\").status==200 else 1)'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: sentinel-redis
+    restart: unless-stopped
+    # Cache-only profile: prediction caching is a hot-path optimisation, no
+    # need for AOF/RDB. Bound memory; LRU eviction.
+    command: >
+      redis-server
+      --maxmemory ${REDIS_MAXMEMORY:-128mb}
+      --maxmemory-policy allkeys-lru
+      --save ""
+      --appendonly no
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   api:
     profiles: ["serving"]
     build:
@@ -36,12 +95,18 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mlflow:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       SENTINEL_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-sentinel}:${POSTGRES_PASSWORD:-sentinel}@postgres:5432/${POSTGRES_DB:-sentinel_telemetry}
-      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-sqlite:////app/mlflow.db}
+      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://mlflow:5000}
+      SENTINEL_REDIS_URL: ${SENTINEL_REDIS_URL:-redis://redis:6379/0}
       SENTINEL_DISABLE_SHADOW: "${SENTINEL_DISABLE_SHADOW:-1}"
     ports:
       - "${API_PORT:-8000}:8000"
 
 volumes:
   sentinel_pgdata:
+  sentinel_mlartifacts:
