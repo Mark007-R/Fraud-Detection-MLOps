@@ -1,8 +1,15 @@
-"""FastAPI serving layer basics — Day 4 Phase 3.
+"""FastAPI serving layer basics -- Day 4 Phase 3, Day-7 hardened.
 
-Exercises /healthz, /predict, /metrics/predictions against an isolated
-sqlite telemetry store. Shadow is disabled because the test env doesn't
-require an MLflow registry to be seeded.
+Exercises /healthz, /predict, /metrics/predictions against:
+- an isolated sqlite telemetry store in tmp_path,
+- a SYNTHETIC XGBoost model + feature columns injected via
+  ``create_app(bundle=...)``.
+
+Day 7 (2026-05-24): the original fixture loaded ``models/fraud_model.pkl``
+and ``data/processed/X_test.csv`` from disk -- both DVC-tracked and absent
+on a fresh CI runner. The synthetic bundle below removes that dependency,
+so this whole module now runs on a hermetic environment with zero data
+state. Trains in ~50 ms.
 """
 
 from __future__ import annotations
@@ -10,16 +17,49 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import joblib
+import numpy as np
+import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
+from xgboost import XGBClassifier
 
 
-# The FastAPI app boots from models/fraud_model.pkl + data/processed/X_test.csv,
-# neither of which is in git -- they come from `dvc repro train`. CI skips this
-# whole module via the `-m "not requires_data"` marker filter; run locally
-# after a successful pipeline run.
-pytestmark = pytest.mark.requires_data
+# The four made-up feature columns the synthetic model is trained on. Their
+# names don't matter -- create_app(bundle=...) trusts the bundle's column list
+# verbatim, and /predict reindexes the request payload onto these.
+_FEATURE_COLS = ["f0", "f1", "f2", "f3"]
+
+
+def _train_synthetic_bundle():
+    """Train a tiny XGB on 200 random rows and wrap it as a ModelBundle.
+
+    The model never has to be accurate -- it just has to be a valid
+    ``predict_proba``-capable estimator the API can score against.
+    """
+    from src.serving.api import ModelBundle
+
+    rng = np.random.default_rng(0)
+    n = 200
+    X = pd.DataFrame(rng.normal(size=(n, len(_FEATURE_COLS))), columns=_FEATURE_COLS)
+    # Cheap, learnable signal so XGB doesn't trip on a degenerate label vector.
+    y = ((X["f0"] + X["f1"] - X["f2"]) > 0).astype(int).to_numpy()
+    model = XGBClassifier(
+        n_estimators=5,
+        max_depth=2,
+        learning_rate=0.3,
+        objective="binary:logistic",
+        eval_metric="logloss",
+        n_jobs=1,
+        random_state=0,
+    )
+    model.fit(X, y)
+    return ModelBundle(
+        model=model,
+        feature_columns=list(_FEATURE_COLS),
+        version="test-synthetic",
+        source="synthetic://test_api",
+        loaded_at=pd.Timestamp.utcnow().isoformat(),
+    )
 
 
 @pytest.fixture(scope="module")
@@ -31,18 +71,17 @@ def client(tmp_path_factory: pytest.TempPathFactory) -> TestClient:
 
     from src.serving.api import create_app
 
-    app = create_app()
+    bundle = _train_synthetic_bundle()
+    app = create_app(bundle=bundle)
     return TestClient(app)
 
 
 def _sample_features(client: TestClient) -> dict[str, float]:
-    """Pull a real X_test row to use as a valid feature payload."""
+    """Build a synthetic feature payload matching the injected bundle."""
     bundle = client.app.state.bundle
-    import pandas as pd
-    from src.data.loader import SentinelDataLoader
-    X = SentinelDataLoader().load_x_test().iloc[:1]
-    row = X.reindex(columns=bundle.feature_columns).iloc[0]
-    return {k: float(v) for k, v in row.to_dict().items()}
+    rng = np.random.default_rng(1)
+    values = rng.normal(size=len(bundle.feature_columns))
+    return {col: float(v) for col, v in zip(bundle.feature_columns, values)}
 
 
 def test_healthz(client: TestClient) -> None:
@@ -50,7 +89,7 @@ def test_healthz(client: TestClient) -> None:
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "ok"
-    assert body["prod_version"]
+    assert body["prod_version"] == "test-synthetic"
     # Shadow disabled in this test fixture.
     assert body["shadow"]["enabled"] is False
 
