@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from src.data.loader import LoaderConfig, SentinelDataLoader, dvc_status
 
@@ -17,6 +18,8 @@ def test_loader_resolves_paths_from_params() -> None:
     assert paths.model.name == "fraud_model.pkl"
 
 
+# Reads data/processed/X_test.csv + y_test.csv which are not in git (DVC).
+@pytest.mark.requires_data
 def test_loader_reads_x_test_and_y_test() -> None:
     loader = SentinelDataLoader()
     X = loader.load_x_test()
