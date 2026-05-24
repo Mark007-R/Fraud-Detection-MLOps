@@ -15,6 +15,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 
+# The FastAPI app boots from models/fraud_model.pkl + data/processed/X_test.csv,
+# neither of which is in git -- they come from `dvc repro train`. CI skips this
+# whole module via the `-m "not requires_data"` marker filter; run locally
+# after a successful pipeline run.
+pytestmark = pytest.mark.requires_data
+
+
 @pytest.fixture(scope="module")
 def client(tmp_path_factory: pytest.TempPathFactory) -> TestClient:
     tmp_dir = tmp_path_factory.mktemp("api-test")
