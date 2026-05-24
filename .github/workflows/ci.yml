@@ -1,0 +1,65 @@
+# Sentinel CI -- Day 7 Phase 6 (2026-05-24).
+#
+# Lightweight CI: validates the DVC pipeline DAG and runs the deterministic
+# unit test surface. The dataset-dependent stages (train/evaluate/benchmark)
+# are intentionally NOT executed -- they need the multi-GB raw data on disk
+# and aren't suited to a 6-minute hosted runner. The DVC DAG check ensures
+# the pipeline definition stays parseable as src/ evolves; the unit tests
+# exercise the production wrapper end-to-end against in-memory fixtures.
+
+name: ci
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Install runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install the pinned runtime deps. Day-4 added FastAPI / SQLAlchemy
+          # / psycopg2 / httpx into requirements.txt, so a single install
+          # covers both training-side and serving-side tests.
+          pip install -r requirements.txt
+          # Extra test-only deps (pytest plus stdlib-only helpers).
+          pip install pytest pytest-asyncio
+
+      - name: Show installed versions
+        run: |
+          python --version
+          pip list | grep -Ei "dvc|mlflow|xgboost|pandas|dask|fastapi|pydantic|streamlit" || true
+
+      - name: Validate DVC pipeline DAG
+        run: |
+          # `dvc dag` parses dvc.yaml and prints the stage graph -- a cheap
+          # way to fail loudly if a stage definition or path drifts.
+          dvc dag --quiet || true
+          dvc dag
+
+      - name: Run unit tests
+        env:
+          # Keep test runs hermetic: in-memory sqlite for both MLflow and
+          # the telemetry store, no shadow evaluator at app import time.
+          MLFLOW_TRACKING_URI: "sqlite:///${{ github.workspace }}/.ci_mlflow.db"
+          SENTINEL_DISABLE_SHADOW: "1"
+          SENTINEL_BUILD_APP_AT_IMPORT: "0"
+        run: |
+          pytest tests/ -q -m "not requires_data" --maxfail=1 --disable-warnings
