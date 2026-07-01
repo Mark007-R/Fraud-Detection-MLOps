@@ -1,5 +1,7 @@
 # Sentinel
 
+> 🔗 **Live demo:** https://iambatman07-sentinel.hf.space · [HF Space](https://huggingface.co/spaces/IamBatman07/Sentinel)
+
 **Fraud-detection MLOps — built around an honest temporal split, with drift detection, auto-retrain, and registry rollback that a notebook can't replicate.**
 
 Sentinel detects fraud in payment transactions (PaySim + Sparkov), but its resume claim is **MLOps discipline at scale**, not raw model quality. A 7-day upgrade sprint found and fixed a data-leakage bug that had been inflating the headline AUC, then layered MLflow registry promotion/rollback, KS+PSI drift detection, auto-retrain-and-promote, Dask-deterministic feature engineering, and Postgres-backed telemetry on top of the existing DVC pipeline.
