@@ -1,10 +1,10 @@
-# Sentinel
+# Fraud-Detection-MLOps
 
 > 🔗 **Live demo:** https://iambatman07-sentinel.hf.space · [HF Space](https://huggingface.co/spaces/IamBatman07/Sentinel)
 
 **Fraud-detection MLOps — built around an honest temporal split, with drift detection, auto-retrain, and registry rollback that a notebook can't replicate.**
 
-Sentinel detects fraud in payment transactions (PaySim + Sparkov), but its resume claim is **MLOps discipline at scale**, not raw model quality. A 7-day upgrade sprint found and fixed a data-leakage bug that had been inflating the headline AUC, then layered MLflow registry promotion/rollback, KS+PSI drift detection, auto-retrain-and-promote, Dask-deterministic feature engineering, and Postgres-backed telemetry on top of the existing DVC pipeline.
+Fraud-Detection-MLOps detects fraud in payment transactions (PaySim + Sparkov), but its resume claim is **MLOps discipline at scale**, not raw model quality. A 7-day upgrade sprint found and fixed a data-leakage bug that had been inflating the headline AUC, then layered MLflow registry promotion/rollback, KS+PSI drift detection, auto-retrain-and-promote, Dask-deterministic feature engineering, and Postgres-backed telemetry on top of the existing DVC pipeline.
 
 ---
 
@@ -23,7 +23,7 @@ The fix: `temporal_split_per_source()` sorts each source chronologically and tak
 
 ## Final champion + the gap closed honestly
 
-A 30-trial Optuna sweep + source-balanced sample weights closed the entire gap to AutoGluon — **no new features, no ensembling, no SHAP** (that's the joint Fraud-Detection project's territory; Sentinel is deliberately MLOps-only).
+A 30-trial Optuna sweep + source-balanced sample weights closed the entire gap to AutoGluon — **no new features, no ensembling, no SHAP** (that's the joint Fraud-Detection project's territory; Fraud-Detection-MLOps is deliberately MLOps-only).
 
 | Model | OOT AUC (sparkov_test.csv) | Δ vs AutoGluon 0.952 | Source |
 |---|---:|---:|---|
@@ -53,7 +53,7 @@ Day 6 ran Claude Opus 4.6 as an LLM fraud judge on the same 200-row OOT sample (
 
 | Strategy | AUC | AUPRC | Latency/query | Cost @ 1K QPS/day |
 |---|---:|---:|---:|---:|
-| **Sentinel champion (XGBoost)** | **0.9156** | **0.526** | 60 µs | **$0.43** |
+| **Fraud-Detection-MLOps champion (XGBoost)** | **0.9156** | **0.526** | 60 µs | **$0.43** |
 | Naive notebook XGBoost | 0.626 | 0.415 | 73 µs | $0.43 |
 | Claude Opus 4.6 LLM-judged | 0.622 | 0.351 | 1.82 s | **$1,250,691** |
 
@@ -140,7 +140,7 @@ pytest tests/ -q -m "not requires_data"          # CI mode (skips full-data repl
 ## Repo layout
 
 ```
-Sentinel/
+Fraud-Detection-MLOps/
 ├── dvc.yaml                    # 6-stage pipeline
 ├── docker-compose.yml          # Postgres + MLflow + Redis + FastAPI
 ├── app.py + pages/             # Streamlit; pages/4_Ops.py = MLOps dashboard
