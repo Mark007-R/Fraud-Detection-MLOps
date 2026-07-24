@@ -1,6 +1,6 @@
 # Fraud-Detection-MLOps
 
-> 🔗 **Live demo:** https://iambatman07-sentinel.hf.space · [HF Space](https://huggingface.co/spaces/IamBatman07/Sentinel)
+> 🔗 **Live demo:** https://iambatman07-fraud-detection-mlops.hf.space · [HF Space](https://huggingface.co/spaces/IamBatman07/Fraud-Detection-MLOps)
 
 **Fraud-detection MLOps — built around an honest temporal split, with drift detection, auto-retrain, and registry rollback that a notebook can't replicate.**
 
