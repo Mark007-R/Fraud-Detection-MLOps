@@ -10,14 +10,14 @@ Fraud-Detection-MLOps detects fraud in payment transactions (PaySim + Sparkov), 
 
 ## The headline: the leakage fix is the story
 
-The original `train.py` used `train_test_split(..., stratify=y)` — a **random** split on time-series fraud data, which leaks future transaction patterns into training. The Day-1 audit ([docs/MLOPS_AUDIT.md](docs/MLOPS_AUDIT.md)) found a second leak too: the benchmark fell back to the *training* file instead of the held-out test file.
+The original `train.py` used `train_test_split(..., stratify=y)` — a **random** split on time-series fraud data, which leaks future transaction patterns into training. The Day-1 audit found a second leak too: the benchmark fell back to the *training* file instead of the held-out test file.
 
 | Metric (Sparkov OOT, vs AutoGluon 0.952) | Before fix | After fix |
 |---|---:|---:|
 | **Honest AUC** | **0.9210** (leaked) | **0.7949** (honest baseline) |
 | Apparent gap to AutoGluon | −0.031 (mirage) | −0.157 (real) |
 
-The fix: `temporal_split_per_source()` sorts each source chronologically and takes the final 20% as test ([docs/DATA_SPLIT.md](docs/DATA_SPLIT.md)). **The ~0.126 AUC drop was the data leakage. The 0.7949 is the number that was always real** — and the rest of the sprint earns it back honestly.
+The fix: `temporal_split_per_source()` sorts each source chronologically and takes the final 20% as test. **The ~0.126 AUC drop was the data leakage. The 0.7949 is the number that was always real** — and the rest of the sprint earns it back honestly.
 
 ---
 
@@ -25,10 +25,10 @@ The fix: `temporal_split_per_source()` sorts each source chronologically and tak
 
 A 30-trial Optuna sweep + source-balanced sample weights closed the entire gap to AutoGluon — **no new features, no ensembling, no SHAP** (that's the joint Fraud-Detection project's territory; Fraud-Detection-MLOps is deliberately MLOps-only).
 
-| Model | OOT AUC (sparkov_test.csv) | Δ vs AutoGluon 0.952 | Source |
-|---|---:|---:|---|
-| Day-1 honest baseline (temporal split) | 0.7949 | −0.157 | `results/baseline_metrics.json` |
-| **Day-5 champion (Optuna + source-balanced)** | **0.9520** | **−0.00004** (tied) | `results/day05/day05_leaderboard.csv` |
+| Model | OOT AUC (sparkov_test.csv) | Δ vs AutoGluon 0.952 |
+|---|---:|---:|
+| Day-1 honest baseline (temporal split) | 0.7949 | −0.157 |
+| **Day-5 champion (Optuna + source-balanced)** | **0.9520** | **−0.00004** (tied) |
 
 Champion: XGBoost, per-source temporal split + source-balanced weights (paysim 0.60×, sparkov 2.95×) + Optuna tuning. Stored at `models/fraud_model_tuned_fixed.pkl` (MLflow run `day05_targeted_fix_v1`).
 
@@ -36,12 +36,12 @@ Champion: XGBoost, per-source temporal split + source-balanced weights (paysim 0
 
 ## The four MLOps capabilities (what a notebook doesn't have)
 
-| Capability | Headline metric | Source |
-|---|---|---|
-| **Dask distributed features** | Pandas 1.15M rows/s vs Dask 0.26M rows/s on one host, **bit-exact within 5.5e-12** | `results/throughput_speedup.csv` |
-| **MLflow registry rollback** | **3.9 ms** median alias flip; 11.9 ms full audited rollback | `results/registry_rollback_times.csv` |
-| **KS+PSI drift detection** | **0-day** detection lag on a synthetic 2σ shift; **precision 1.0, recall 1.0** on the 7-day window | `results/drift_replay_summary.json` |
-| **Auto-retrain + shadow-promote** | drift → train → shadow-eval → promote in **median 6.85 s**; 3/3 events auto-promoted | `results/drift_retrain_events.csv` |
+| Capability | Headline metric |
+|---|---|
+| **Dask distributed features** | Pandas 1.15M rows/s vs Dask 0.26M rows/s on one host, **bit-exact within 5.5e-12** |
+| **MLflow registry rollback** | **3.9 ms** median alias flip; 11.9 ms full audited rollback |
+| **KS+PSI drift detection** | **0-day** detection lag on a synthetic 2σ shift; **precision 1.0, recall 1.0** on the 7-day window |
+| **Auto-retrain + shadow-promote** | drift → train → shadow-eval → promote in **median 6.85 s**; 3/3 events auto-promoted |
 
 Dask "loses" the single-host throughput race but is the *scaling primitive* — and it's bit-exact with Pandas, which is the property that lets you swap engines without changing results.
 
@@ -57,7 +57,7 @@ Day 6 ran Claude Opus 4.6 as an LLM fraud judge on the same 200-row OOT sample (
 | Naive notebook XGBoost | 0.626 | 0.415 | 73 µs | $0.43 |
 | Claude Opus 4.6 LLM-judged | 0.622 | 0.351 | 1.82 s | **$1,250,691** |
 
-Two findings: (1) the LLM is **30,400× slower** and **2.9M× more expensive**, and ranks 0.29 AUC worse — it caught only textbook patterns (large online txns at night) and missed the "card skimmed at POS → grocery abuse" behavioral class. (2) **The naive notebook XGBoost (0.626) ties the LLM (0.622)** — the 0.29-AUC jump to the champion comes from the *discipline layers*, not from "XGBoost vs LLM". The discipline is the model. Source: `results/day06/frontier_comparison.csv`. The LLM judge ran in simulate mode (no API key on host); `--mode api` is the same code path with a real key.
+Two findings: (1) the LLM is **30,400× slower** and **2.9M× more expensive**, and ranks 0.29 AUC worse — it caught only textbook patterns (large online txns at night) and missed the "card skimmed at POS → grocery abuse" behavioral class. (2) **The naive notebook XGBoost (0.626) ties the LLM (0.622)** — the 0.29-AUC jump to the champion comes from the *discipline layers*, not from "XGBoost vs LLM". The discipline is the model. The LLM judge ran in simulate mode (no API key on host); `--mode api` is the same code path with a real key.
 
 ### MLOps ablation (L0 → L3, full OOT)
 | Layer | OOT AUC | Δ vs prev |
@@ -67,7 +67,7 @@ Two findings: (1) the LLM is **30,400× slower** and **2.9M× more expensive**, 
 | L2 + source-balanced weights | 0.696 | +0.039 |
 | L3 + Optuna (champion) | **0.948** | **+0.252** |
 
-Total L0→L3 gain: **+0.401 OOT AUC**. Every layer is load-bearing; Optuna is the biggest single contributor. Source: `results/day06/ablation_modelling.csv`.
+Total L0→L3 gain: **+0.401 OOT AUC**. Every layer is load-bearing; Optuna is the biggest single contributor.
 
 ---
 
@@ -159,9 +159,6 @@ Fraud-Detection-MLOps/
 │   └── frontier/{llm_judge,compare_models,ablation}.py
 ├── tests/                      # 31-test suite
 ├── models/fraud_model_tuned_fixed.pkl   # champion
-├── results/                    # baseline, throughput, rollback, drift, day05/, day06/
-├── reports/                    # day01..day07 phase reports
-├── docs/                       # MLOPS_AUDIT.md, DATA_SPLIT.md
 └── data/raw/{paysim,sparkov,sparkov_test}.csv
 ```
 
