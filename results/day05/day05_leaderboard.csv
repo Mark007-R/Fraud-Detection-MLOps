@@ -1,6 +1,0 @@
-rank,strategy,training_scope,sample_weight,threshold,in_dist_sparkov_auc,oot_sparkov_test_auc,oot_ap,oot_recall,oot_precision,oot_f1,delta_vs_autogluon,notes
-1,AutoGluon (FDB published baseline),FDB standard,n/a,n/a,,0.952,,,,,0.0,reference baseline
-2,Day-5 Optuna + source-balanced weights -threshold=0.5,"full (6.1M, paysim 0.60x / sparkov 2.95x)",source_balanced,0.5,0.9971775606973103,0.951958845551572,0.20830353279765584,0.2592074592074592,0.2744323790720632,0.2666027331575162,-0.0,AUC ties AutoGluon; recall jumps 6x
-3,Day-5 Optuna + source-balanced weights -threshold=tau*,"full (6.1M, paysim 0.60x / sparkov 2.95x)",source_balanced,0.8939489722251892,0.9971775606973103,0.951958845551572,0.20830353279765584,0.14685314685314685,0.5526315789473685,0.23204419889502761,-0.0,"F1 trade: higher precision (0.55), lower recall (0.15)"
-4,Day-5 Optuna best (30 trials) -full retrain,full (6.1M),uniform,0.5,0.9970274251784879,0.915380324555611,0.067267067319249,0.042890442890442894,0.34328358208955223,0.0762536261914629,-0.0366,tuning recovers ranking; recall still collapses at 0.5
-5,"Day-1 honest baseline (random XGB defaults, temporal split fix)",full (6.1M),uniform,0.5,0.996608,0.794896,,,,,-0.1571,honest baseline -pre-tuning

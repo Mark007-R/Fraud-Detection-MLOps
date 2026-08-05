@@ -1,4 +1,0 @@
-rows_requested,rows_actual,pandas_seconds,dask_seconds,pandas_rows_per_sec,dask_rows_per_sec,speedup_pandas_over_dask,dask_partitions,deterministic,max_abs_diff_overall
-100000,100000,0.0874,0.8945,1144552.39,111800.17,0.098,16,True,4.333866598926761e-12
-500000,500000,0.381,2.2605,1312468.93,221185.82,0.169,16,True,4.185651825139303e-12
-1000000,1000000,0.8674,3.8482,1152848.32,259861.75,0.225,16,True,5.5243587482323164e-12

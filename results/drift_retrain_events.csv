@@ -1,4 +1,0 @@
-first_fired_day,consecutive_days,triggered_on_day,train_window_days,train_rows,shadow_day,shadow_rows,shadow_auprc,shadow_auc,prod_auprc,promote_decision,promote_reason,new_model_version,run_id,seconds_detect_to_retrain_start,seconds_train,seconds_shadow_eval,seconds_register_and_alias,seconds_end_to_end
-23,2,24,22;23,4876,24,3177,0.552,0.9151,0.0551,True,shadow_auprc 0.5520 >= prod_auprc 0.0551 - tol 0.010,7,7c1aeb21b6a5404ca58dcc6c1f05cafa,0.0097,0.6774,0.0704,0.398,30.093
-25,2,26,24;25,5900,26,1587,0.805,0.9968,0.7561,True,shadow_auprc 0.8050 >= prod_auprc 0.7561 - tol 0.010,8,de5d55b9f4db444dbf734822ce22adfe,0.0052,0.754,0.0381,0.0305,6.8528
-27,2,28,26;27,3259,28,1844,0.7653,0.97,0.7575,True,shadow_auprc 0.7653 >= prod_auprc 0.7575 - tol 0.010,9,d4bc3ea99dd44650a978570f18008043,0.0057,0.4912,0.0364,0.0292,6.4964
