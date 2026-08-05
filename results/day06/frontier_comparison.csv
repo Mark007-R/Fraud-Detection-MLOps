@@ -1,4 +1,0 @@
-strategy,auc,auprc,recall_at_0_5,precision_at_0_5,f1_at_0_5,tp,fp,fn,latency_s_per_query,cost_usd_per_query,cost_usd_at_1k_qps_per_day
-Sentinel champion (Day-5 XGBoost: temporal split + source-balanced + Optuna),0.9155555555555556,0.5259898688226262,0.05,1.0,0.09523809523809523,1,0,19,5.968949990347028e-05,5e-09,0.43200000000000005
-"Naive notebook XGBoost (random split, defaults, no MLOps)",0.6263888888888889,0.4153448019838129,0.05,1.0,0.09523809523809523,1,0,19,7.340950018260629e-05,5e-09,0.43200000000000005
-Claude Opus 4.6 LLM-judged (frontier model),0.6225,0.35122716815016986,0.3,0.8571428571428571,0.4444444444444444,6,1,14,1.8162843168403366,0.0144756,1250691.84
