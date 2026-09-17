@@ -8,89 +8,18 @@ from pathlib import Path
 import plotly.graph_objects as go
 import plotly.express as px
 
+import ui_theme
+from ui_theme import apply_theme
+
 st.set_page_config(page_title="Performance - SENTINEL", layout="wide", page_icon="S")
 
-# Dark theme CSS
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+# Shared mark.dev theme (MODE and accent live in ui_theme.py)
+apply_theme()
 
-    [data-testid="stAppViewContainer"] {
-        background: linear-gradient(160deg, #0b0f19 0%, #111827 40%, #1e293b 100%);
-        font-family: 'Inter', sans-serif;
-    }
-
-    [data-testid="stHeader"] {
-        background: rgba(11, 15, 25, 0.95);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(147, 197, 253, 0.15);
-    }
-
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0b0f19 0%, #111827 100%);
-        border-right: 1px solid rgba(147, 197, 253, 0.1);
-    }
-
-    h1, h2, h3 { color: #e2e8f0 !important; }
-    p, label, .stMarkdown { color: #cbd5e1 !important; }
-
-    .page-header h1 {
-        background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 50%, #3b82f6 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-weight: 900;
-        font-size: 2.2rem;
-    }
-
-    .page-header p { color: #94a3b8 !important; }
-
-    .stTabs [role="tablist"] {
-        background: rgba(147, 197, 253, 0.05);
-        border-radius: 8px;
-        padding: 4px;
-    }
-
-    .stTabs [role="tablist"] button {
-        color: #94a3b8 !important;
-        border-radius: 6px;
-        font-weight: 500;
-    }
-
-    .stTabs [role="tablist"] button[aria-selected="true"] {
-        background: rgba(59, 130, 246, 0.2) !important;
-        color: #93c5fd !important;
-        border-bottom: 2px solid #3b82f6 !important;
-    }
-
-    .stMetric {
-        background: linear-gradient(135deg, rgba(147, 197, 253, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%);
-        border: 1px solid rgba(147, 197, 253, 0.15);
-        border-radius: 12px;
-        padding: 1rem;
-    }
-
-    .stMetric label { color: #94a3b8 !important; }
-    .stMetric [data-testid="stMetricValue"] { color: #e2e8f0 !important; }
-
-    .section-divider {
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(147, 197, 253, 0.2), transparent);
-        margin: 2rem 0;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Plotly dark theme layout
-PLOTLY_LAYOUT = dict(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(17, 24, 39, 0.5)",
-    font=dict(color="#94a3b8", family="Inter"),
-    title_font=dict(color="#e2e8f0", size=16),
-    xaxis=dict(gridcolor="rgba(147, 197, 253, 0.08)", zerolinecolor="rgba(147, 197, 253, 0.1)"),
-    yaxis=dict(gridcolor="rgba(147, 197, 253, 0.08)", zerolinecolor="rgba(147, 197, 253, 0.1)"),
-    margin=dict(l=40, r=40, t=50, b=40),
-)
+# Charts sit on the theme ground: ui_theme.style_fig() applies the layout and
+# repaints stock-plotly trace colours; render with theme=None so Streamlit does
+# not repaint them again in its own palette.
+CHART_MARGIN = dict(l=40, r=40, t=50, b=40)
 
 st.markdown("""
 <div class="page-header">
@@ -178,21 +107,23 @@ with tab1:
             go.Bar(
                 x=list(metrics_for_chart.keys()),
                 y=list(metrics_for_chart.values()),
-                marker_color=['#3b82f6', '#60a5fa', '#06b6d4', '#8b5cf6'],
+                marker_color=ui_theme.colorway()[:4],
                 text=[f"{v:.4f}" for v in metrics_for_chart.values()],
                 textposition='auto',
-                textfont=dict(color="#e2e8f0"),
+                insidetextfont=dict(color=ui_theme.ON_ACCENT),
+                outsidetextfont=dict(color=ui_theme.INK),
             )
         ])
-        fig.update_layout(
+        ui_theme.style_fig(
+            fig,
             title="Classification Metrics Comparison",
             yaxis_title="Score",
             xaxis_title="Metric",
             height=400,
             showlegend=False,
-            **PLOTLY_LAYOUT,
+            margin=CHART_MARGIN,
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
     with col2:
         support_data = {
@@ -208,17 +139,19 @@ with tab1:
             go.Pie(
                 labels=support_df['Class'],
                 values=support_df['Count'],
-                marker_colors=['#3b82f6', '#ef4444'],
-                textfont=dict(color="#e2e8f0"),
+                marker_colors=[ui_theme.NEUTRAL, ui_theme.BAD],
+                insidetextfont=dict(color=ui_theme.ON_ACCENT),
+                outsidetextfont=dict(color=ui_theme.INK),
                 hole=0.4,
             )
         ])
-        fig.update_layout(
+        ui_theme.style_fig(
+            fig,
             title="Class Distribution in Test Set",
             height=400,
-            **{k: v for k, v in PLOTLY_LAYOUT.items() if k not in ('xaxis', 'yaxis')},
+            margin=CHART_MARGIN,
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
 with tab2:
     st.markdown("### Confusion Matrix")
@@ -237,21 +170,23 @@ with tab2:
         y=['Actual Negative', 'Actual Positive'],
         text=cm_data,
         texttemplate='%{text}',
-        textfont={"size": 18, "color": "#e2e8f0"},
-        colorscale=[[0, '#1e293b'], [0.5, '#3b82f6'], [1, '#93c5fd']],
+        textfont={"size": 18},  # colour left to plotly: contrasts per cell
+        colorscale=ui_theme.colorscale(),
         showscale=True,
-        colorbar=dict(title="Count", tickfont=dict(color="#94a3b8")),
+        colorbar=dict(title="Count", tickfont=dict(color=ui_theme.INK_2),
+                      outlinecolor=ui_theme.LINE),
     ))
 
-    fig.update_layout(
+    ui_theme.style_fig(
+        fig,
         title="Confusion Matrix",
         xaxis_title="Predicted Label",
         yaxis_title="True Label",
         height=500,
-        **PLOTLY_LAYOUT,
+        margin=CHART_MARGIN,
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, theme=None)
 
     col1, col2 = st.columns(2)
 
@@ -297,30 +232,32 @@ with tab3:
                 y=tpr_data,
                 mode='lines',
                 name=f'ROC Curve (AUC = {auc_score:.4f})',
-                line=dict(color='#3b82f6', width=3),
+                line=dict(color=ui_theme.ACCENT, width=3),
                 fill='tozeroy',
-                fillcolor='rgba(59, 130, 246, 0.1)',
+                fillcolor=ui_theme._rgba(ui_theme.ACCENT, 0.12),
             ),
             go.Scatter(
                 x=[0, 1],
                 y=[0, 1],
                 mode='lines',
                 name='Random Classifier',
-                line=dict(color='#475569', width=2, dash='dash'),
+                line=dict(color=ui_theme.INK_3, width=2, dash='dash'),
             ),
         ])
 
-        fig.update_layout(
+        ui_theme.style_fig(
+            fig,
             title=f"ROC Curve (AUC = {auc_score:.4f})",
             xaxis_title="False Positive Rate",
             yaxis_title="True Positive Rate",
             height=500,
             hovermode='closest',
-            legend=dict(x=0.55, y=0.1, font=dict(color="#94a3b8")),
-            **PLOTLY_LAYOUT,
+            legend=dict(x=0.55, y=0.1, bgcolor="rgba(0,0,0,0)",
+                        font=dict(color=ui_theme.INK_2)),
+            margin=CHART_MARGIN,
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
     else:
         st.info("ROC curve data not available in metrics file. Re-run evaluation to generate it.")
 
@@ -348,24 +285,27 @@ with tab4:
                 orientation='h',
                 marker=dict(
                     color=importance_df['Importance'],
-                    colorscale=[[0, '#1e3a5f'], [0.5, '#3b82f6'], [1, '#93c5fd']],
+                    colorscale=ui_theme.bar_scale(),
                 ),
                 text=importance_df['Importance'].apply(lambda x: f"{x:.4f}"),
                 textposition='auto',
-                textfont=dict(color="#e2e8f0"),
+                insidetextfont=dict(color=ui_theme.ON_ACCENT),
+                outsidetextfont=dict(color=ui_theme.INK),
             )
         ])
 
-        fig.update_layout(
+        ui_theme.style_fig(
+            fig,
             title="Top 20 Most Important Features",
             xaxis_title="Importance Score",
             yaxis_title="Feature",
             height=600,
-            yaxis=dict(autorange="reversed", gridcolor="rgba(147, 197, 253, 0.08)"),
-            **{k: v for k, v in PLOTLY_LAYOUT.items() if k != 'yaxis'},
+            yaxis=dict(autorange="reversed", gridcolor=ui_theme.LINE,
+                       linecolor=ui_theme.LINE_STRONG),
+            margin=CHART_MARGIN,
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
         st.markdown("#### All Features")
         st.dataframe(importance_df, use_container_width=True, hide_index=True)
@@ -418,8 +358,7 @@ with tab5:
     )
 
 st.markdown("""
-<div style="text-align: center; color: #475569; font-size: 0.8rem; padding: 1.5rem 0;
-            border-top: 1px solid rgba(147, 197, 253, 0.08);">
+<div class="footer-text">
     Model trained with DVC pipeline | Metrics generated by evaluate.py
 </div>
 """, unsafe_allow_html=True)

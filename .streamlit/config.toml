@@ -1,0 +1,9 @@
+# Native Streamlit widgets share the mark.dev after-dark palette with ui_theme.py
+# (MODE = "dark"). Night accent for this project: Crimson.
+[theme]
+base = "dark"
+primaryColor = "#F0655A"
+backgroundColor = "#14110f"
+secondaryBackgroundColor = "#1f1a17"
+textColor = "#f4ede4"
+font = "sans serif"

@@ -21,6 +21,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
+import ui_theme
+from ui_theme import apply_theme
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RESULTS = REPO_ROOT / "results"
@@ -28,44 +31,9 @@ RESULTS = REPO_ROOT / "results"
 
 st.set_page_config(page_title="Ops - SENTINEL", layout="wide", page_icon="S")
 
-st.markdown(
-    """
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-    [data-testid="stAppViewContainer"] {
-        background: linear-gradient(160deg, #0b0f19 0%, #111827 40%, #1e293b 100%);
-        font-family: 'Inter', sans-serif;
-    }
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0b0f19 0%, #111827 100%);
-        border-right: 1px solid rgba(147, 197, 253, 0.1);
-    }
-    h1, h2, h3 { color: #e2e8f0 !important; }
-    p, label, .stMarkdown, .stCaption { color: #cbd5e1 !important; }
-    .ops-title {
-        text-align: center;
-        background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 50%, #3b82f6 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 900;
-        font-size: 2.5rem;
-        margin-bottom: 0.25rem;
-    }
-    .ops-sub { text-align: center; color: #94a3b8; margin-bottom: 1.5rem; }
-    .metric-card {
-        background: rgba(30, 41, 59, 0.55);
-        border: 1px solid rgba(147, 197, 253, 0.15);
-        border-radius: 12px;
-        padding: 1rem 1.25rem;
-    }
-    .metric-card h4 { color: #93c5fd; margin: 0 0 0.25rem; font-weight: 600; font-size: 0.9rem; }
-    .metric-card .value { color: #f1f5f9; font-size: 1.6rem; font-weight: 800; }
-    .metric-card .delta { color: #34d399; font-size: 0.85rem; }
-    .metric-card .delta.bad { color: #f87171; }
-</style>
-""",
-    unsafe_allow_html=True,
-)
+# Shared mark.dev theme (MODE and accent live in ui_theme.py). The ops-title,
+# ops-sub and metric-card classes used below are styled there as well.
+apply_theme()
 
 st.markdown('<div class="ops-title">SENTINEL MLOps Dashboard</div>', unsafe_allow_html=True)
 st.markdown(
@@ -204,39 +172,36 @@ else:
             x=drift_daily["day"],
             y=drift_daily["proba_psi"],
             name="Prediction PSI",
-            marker_color=["#f87171" if f else "#3b82f6" for f in drift_daily["fired"]],
+            marker_color=[ui_theme.BAD if f else ui_theme.NEUTRAL for f in drift_daily["fired"]],
             hovertemplate="day %{x}<br>PSI=%{y:.3f}<extra></extra>",
         )
     )
     fig.add_hline(
         y=0.25,
         line_dash="dot",
-        line_color="#facc15",
+        line_color=ui_theme.WARN,
         annotation_text="PSI threshold = 0.25",
         annotation_position="top right",
-        annotation_font_color="#facc15",
+        annotation_font_color=ui_theme.WARN,
     )
     injection_day = drift_summary.get("injection_day", 23)
     fig.add_vline(
         x=injection_day,
         line_dash="dash",
-        line_color="#fb7185",
+        line_color=ui_theme.INFO,
         annotation_text=f"injected day {injection_day}",
         annotation_position="top",
-        annotation_font_color="#fb7185",
+        annotation_font_color=ui_theme.INFO,
     )
-    fig.update_layout(
+    ui_theme.style_fig(
+        fig,
         height=380,
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font_color="#e2e8f0",
         showlegend=False,
         xaxis_title="day",
         yaxis_title="PSI on predicted probability",
         margin=dict(l=20, r=20, t=20, b=20),
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, theme=None)
 
     pre_psi = drift_daily.loc[drift_daily["day"] < injection_day, "proba_psi"].max()
     post_psi = drift_daily.loc[drift_daily["day"] >= injection_day, "proba_psi"].min()
@@ -322,21 +287,19 @@ else:
         color="phase",
         barmode="group",
         height=330,
+        color_discrete_sequence=ui_theme.colorway(),
         color_discrete_map={
-            "alias_flip_seconds": "#3b82f6",
-            "audit_tag_seconds": "#a78bfa",
-            "total_seconds": "#facc15",
+            "alias_flip_seconds": ui_theme.colorway()[0],
+            "audit_tag_seconds": ui_theme.colorway()[1],
+            "total_seconds": ui_theme.colorway()[3],
         },
     )
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font_color="#e2e8f0",
+    ui_theme.style_fig(
+        fig,
         margin=dict(l=20, r=20, t=20, b=20),
         legend_title_text="",
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, theme=None)
 
 
 # ---------------------------------------------------------------------------
@@ -370,19 +333,17 @@ else:
         color="backend",
         markers=True,
         height=320,
-        color_discrete_map={"Pandas": "#3b82f6", "Dask": "#34d399"},
+        color_discrete_sequence=ui_theme.colorway(),
+        color_discrete_map={"Pandas": ui_theme.colorway()[0], "Dask": ui_theme.colorway()[1]},
     )
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font_color="#e2e8f0",
+    ui_theme.style_fig(
+        fig,
         xaxis_title="rows processed",
         yaxis_title="rows / sec",
         margin=dict(l=20, r=20, t=20, b=20),
         legend_title_text="",
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, theme=None)
 
 
 # ---------------------------------------------------------------------------
