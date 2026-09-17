@@ -7,89 +7,18 @@ import plotly.graph_objects as go
 import plotly.express as px
 from pathlib import Path
 
+import ui_theme
+from ui_theme import apply_theme
+
 st.set_page_config(page_title="Transactions - SENTINEL", layout="wide", page_icon="S")
 
-# Dark theme CSS
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+# Shared mark.dev theme (MODE and accent live in ui_theme.py)
+apply_theme()
 
-    [data-testid="stAppViewContainer"] {
-        background: linear-gradient(160deg, #0b0f19 0%, #111827 40%, #1e293b 100%);
-        font-family: 'Inter', sans-serif;
-    }
-
-    [data-testid="stHeader"] {
-        background: rgba(11, 15, 25, 0.95);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(147, 197, 253, 0.15);
-    }
-
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0b0f19 0%, #111827 100%);
-        border-right: 1px solid rgba(147, 197, 253, 0.1);
-    }
-
-    h1, h2, h3 { color: #e2e8f0 !important; }
-    p, label, .stMarkdown { color: #cbd5e1 !important; }
-
-    .page-header h1 {
-        background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 50%, #3b82f6 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-weight: 900;
-        font-size: 2.2rem;
-    }
-
-    .page-header p { color: #94a3b8 !important; }
-
-    .stTabs [role="tablist"] {
-        background: rgba(147, 197, 253, 0.05);
-        border-radius: 8px;
-        padding: 4px;
-    }
-
-    .stTabs [role="tablist"] button {
-        color: #94a3b8 !important;
-        border-radius: 6px;
-        font-weight: 500;
-    }
-
-    .stTabs [role="tablist"] button[aria-selected="true"] {
-        background: rgba(59, 130, 246, 0.2) !important;
-        color: #93c5fd !important;
-        border-bottom: 2px solid #3b82f6 !important;
-    }
-
-    .stMetric {
-        background: linear-gradient(135deg, rgba(147, 197, 253, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%);
-        border: 1px solid rgba(147, 197, 253, 0.15);
-        border-radius: 12px;
-        padding: 1rem;
-    }
-
-    .stMetric label { color: #94a3b8 !important; }
-    .stMetric [data-testid="stMetricValue"] { color: #e2e8f0 !important; }
-
-    .section-divider {
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(147, 197, 253, 0.2), transparent);
-        margin: 2rem 0;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Plotly dark theme layout
-PLOTLY_LAYOUT = dict(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(17, 24, 39, 0.5)",
-    font=dict(color="#94a3b8", family="Inter"),
-    title_font=dict(color="#e2e8f0", size=16),
-    xaxis=dict(gridcolor="rgba(147, 197, 253, 0.08)", zerolinecolor="rgba(147, 197, 253, 0.1)"),
-    yaxis=dict(gridcolor="rgba(147, 197, 253, 0.08)", zerolinecolor="rgba(147, 197, 253, 0.1)"),
-    margin=dict(l=40, r=40, t=50, b=40),
-)
+# Charts sit on the theme ground: ui_theme.style_fig() applies the layout and
+# repaints stock-plotly trace colours; render with theme=None so Streamlit does
+# not repaint them again in its own palette.
+CHART_MARGIN = dict(l=40, r=40, t=50, b=40)
 
 st.markdown("""
 <div class="page-header">
@@ -162,10 +91,11 @@ with tab1:
                 df, x='amount', nbins=50,
                 title='Transaction Amount Distribution',
                 labels={'amount': 'Amount ($)', 'count': 'Frequency'},
+                color_discrete_sequence=ui_theme.colorway(),
             )
-            fig.update_traces(marker_color='#3b82f6')
-            fig.update_layout(height=400, **PLOTLY_LAYOUT)
-            st.plotly_chart(fig, use_container_width=True)
+            fig.update_traces(marker_color=ui_theme.ACCENT)
+            ui_theme.style_fig(fig, height=400, margin=CHART_MARGIN)
+            st.plotly_chart(fig, use_container_width=True, theme=None)
 
         with col2:
             if 'is_fraud' in df.columns:
@@ -174,13 +104,14 @@ with tab1:
                     title='Amount Distribution by Class',
                     labels={'is_fraud': 'Class', 'amount': 'Amount ($)'},
                     color='is_fraud',
-                    color_discrete_map={0: '#3b82f6', 1: '#ef4444'},
+                    color_discrete_map={0: ui_theme.NEUTRAL, 1: ui_theme.BAD},
                 )
             else:
-                fig = px.box(df, y='amount', title='Amount Distribution')
+                fig = px.box(df, y='amount', title='Amount Distribution',
+                             color_discrete_sequence=ui_theme.colorway())
 
-            fig.update_layout(height=400, **PLOTLY_LAYOUT)
-            st.plotly_chart(fig, use_container_width=True)
+            ui_theme.style_fig(fig, height=400, margin=CHART_MARGIN)
+            st.plotly_chart(fig, use_container_width=True, theme=None)
 
         col3, col4 = st.columns(2)
 
@@ -209,21 +140,23 @@ with tab1:
                     x=bracket_dist.index.astype(str),
                     y=bracket_dist.values,
                     marker=dict(
-                        color=['#1e3a5f', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd'],
+                        color=ui_theme.ramp(5),
                     ),
                     text=bracket_dist.values,
                     textposition='auto',
-                    textfont=dict(color="#e2e8f0"),
+                    insidetextfont=dict(color=ui_theme.ON_ACCENT),
+                    outsidetextfont=dict(color=ui_theme.INK),
                 )
             ])
-            fig.update_layout(
+            ui_theme.style_fig(
+                fig,
                 title='Transactions by Amount Bracket',
                 xaxis_title='Amount Range',
                 yaxis_title='Count',
                 height=400,
-                **PLOTLY_LAYOUT,
+                margin=CHART_MARGIN,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, theme=None)
 
 with tab2:
     st.markdown("### Pattern & Anomaly Detection")
@@ -240,17 +173,19 @@ with tab2:
                 go.Pie(
                     labels=fraud_dist.index,
                     values=fraud_dist.values,
-                    marker_colors=['#3b82f6', '#ef4444'],
+                    marker_colors=[ui_theme.NEUTRAL, ui_theme.BAD],
                     hole=0.45,
-                    textfont=dict(color="#e2e8f0"),
+                    insidetextfont=dict(color=ui_theme.ON_ACCENT),
+                    outsidetextfont=dict(color=ui_theme.INK),
                 )
             ])
-            fig.update_layout(
+            ui_theme.style_fig(
+                fig,
                 title="Fraud vs Legitimate Transactions",
                 height=400,
-                **{k: v for k, v in PLOTLY_LAYOUT.items() if k not in ('xaxis', 'yaxis')},
+                margin=CHART_MARGIN,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, theme=None)
 
             fraud_rate = (df['is_fraud'] == 1).sum() / len(df) * 100
             fraud_stats = pd.DataFrame({
@@ -307,20 +242,21 @@ with tab3:
                     x=time_dist.index,
                     y=time_dist.values,
                     mode='lines+markers',
-                    line=dict(color='#3b82f6', width=2),
-                    marker=dict(color='#60a5fa', size=6),
+                    line=dict(color=ui_theme.ACCENT, width=2),
+                    marker=dict(color=ui_theme.ACCENT, size=6),
                     fill='tozeroy',
-                    fillcolor='rgba(59, 130, 246, 0.1)',
+                    fillcolor=ui_theme._rgba(ui_theme.ACCENT, 0.12),
                 )
             ])
-            fig.update_layout(
+            ui_theme.style_fig(
+                fig,
                 title=f'Transactions Over {selected_time_col}',
                 xaxis_title=selected_time_col,
                 yaxis_title='Count',
                 height=400,
-                **PLOTLY_LAYOUT,
+                margin=CHART_MARGIN,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, theme=None)
 
         with col2:
             if 'is_fraud' in df.columns:
@@ -329,20 +265,22 @@ with tab3:
                     go.Bar(
                         x=fraud_by_time.index,
                         y=fraud_by_time.values,
-                        marker_color='#ef4444',
+                        marker_color=ui_theme.BAD,
                         text=fraud_by_time.values,
                         textposition='auto',
-                        textfont=dict(color="#e2e8f0"),
+                        insidetextfont=dict(color=ui_theme.ON_ACCENT),
+                        outsidetextfont=dict(color=ui_theme.INK),
                     )
                 ])
-                fig.update_layout(
+                ui_theme.style_fig(
+                    fig,
                     title=f'Frauds Over {selected_time_col}',
                     xaxis_title=selected_time_col,
                     yaxis_title='Fraud Count',
                     height=400,
-                    **PLOTLY_LAYOUT,
+                    margin=CHART_MARGIN,
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, theme=None)
     else:
         st.info("""
         **Time-based analysis not available.** Ensure your dataset includes temporal features
@@ -374,10 +312,11 @@ with tab4:
                             df, x=feature, nbins=30,
                             title=f'Distribution of {feature}',
                             labels={feature: feature, 'count': 'Frequency'},
+                            color_discrete_sequence=ui_theme.colorway(),
                         )
-                        fig.update_traces(marker_color='#3b82f6')
-                        fig.update_layout(height=350, **PLOTLY_LAYOUT)
-                        st.plotly_chart(fig, use_container_width=True)
+                        fig.update_traces(marker_color=ui_theme.ACCENT)
+                        ui_theme.style_fig(fig, height=350, margin=CHART_MARGIN)
+                        st.plotly_chart(fig, use_container_width=True, theme=None)
     else:
         st.info("No numeric features available for distribution analysis")
 
@@ -397,22 +336,23 @@ with tab5:
             z=correlation_matrix.values,
             x=correlation_matrix.columns,
             y=correlation_matrix.columns,
-            colorscale=[[0, '#1e3a5f'], [0.25, '#2563eb'], [0.5, '#1e293b'], [0.75, '#dc2626'], [1, '#fca5a5']],
+            colorscale=ui_theme.diverging(),
             zmid=0,
             zmin=-1,
             zmax=1,
-            textfont=dict(color="#e2e8f0"),
+            textfont=dict(color=ui_theme.INK),
         ))
 
-        fig.update_layout(
+        ui_theme.style_fig(
+            fig,
             title='Feature Correlation Matrix',
             height=700,
             xaxis_title='Features',
             yaxis_title='Features',
-            **PLOTLY_LAYOUT,
+            margin=CHART_MARGIN,
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
         st.markdown("#### Highly Correlated Pairs (|r| > 0.7)")
 
@@ -454,8 +394,7 @@ with col2:
     st.markdown(f"**{len(df):,}** rows, **{len(df.columns)}** columns available for export")
 
 st.markdown("""
-<div style="text-align: center; color: #475569; font-size: 0.8rem; padding: 1.5rem 0;
-            border-top: 1px solid rgba(147, 197, 253, 0.08);">
+<div class="footer-text">
     Transaction data processed with Pandas | Features engineered in preprocessing stage
 </div>
 """, unsafe_allow_html=True)

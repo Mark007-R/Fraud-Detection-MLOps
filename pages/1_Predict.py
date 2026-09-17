@@ -8,132 +8,12 @@ import json
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.predict import predict_dataframe
+from ui_theme import apply_theme
 
 st.set_page_config(page_title="Predict Fraud - SENTINEL", layout="wide", page_icon="S")
 
-# Dark theme CSS
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
-    [data-testid="stAppViewContainer"] {
-        background: linear-gradient(160deg, #0b0f19 0%, #111827 40%, #1e293b 100%);
-        font-family: 'Inter', sans-serif;
-    }
-
-    [data-testid="stHeader"] {
-        background: rgba(11, 15, 25, 0.95);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(147, 197, 253, 0.15);
-    }
-
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0b0f19 0%, #111827 100%);
-        border-right: 1px solid rgba(147, 197, 253, 0.1);
-    }
-
-    h1, h2, h3 {
-        color: #e2e8f0 !important;
-    }
-
-    p, label, .stMarkdown {
-        color: #cbd5e1 !important;
-    }
-
-    .page-header {
-        padding: 1rem 0 2rem 0;
-    }
-
-    .page-header h1 {
-        background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 50%, #3b82f6 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-weight: 900;
-        font-size: 2.2rem;
-    }
-
-    .page-header p {
-        color: #94a3b8 !important;
-    }
-
-    .stTabs [role="tablist"] {
-        background: rgba(147, 197, 253, 0.05);
-        border-radius: 8px;
-        padding: 4px;
-    }
-
-    .stTabs [role="tablist"] button {
-        color: #94a3b8 !important;
-        border-radius: 6px;
-        font-weight: 500;
-    }
-
-    .stTabs [role="tablist"] button[aria-selected="true"] {
-        background: rgba(59, 130, 246, 0.2) !important;
-        color: #93c5fd !important;
-        border-bottom: 2px solid #3b82f6 !important;
-    }
-
-    .stButton > button {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        color: #ffffff !important;
-        border: 1px solid rgba(147, 197, 253, 0.3);
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 0.6rem 1.5rem;
-        transition: all 0.3s ease;
-    }
-
-    .stButton > button:hover {
-        background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
-        transform: translateY(-1px);
-    }
-
-    .stMetric {
-        background: linear-gradient(135deg, rgba(147, 197, 253, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%);
-        border: 1px solid rgba(147, 197, 253, 0.15);
-        border-radius: 12px;
-        padding: 1rem;
-    }
-
-    .stMetric label { color: #94a3b8 !important; }
-    .stMetric [data-testid="stMetricValue"] { color: #e2e8f0 !important; }
-
-    .result-fraud {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(185, 28, 28, 0.05) 100%);
-        border: 1px solid rgba(239, 68, 68, 0.3);
-        border-left: 4px solid #ef4444;
-        padding: 1.5rem;
-        border-radius: 12px;
-        margin: 1rem 0;
-    }
-
-    .result-fraud h3 { color: #fca5a5 !important; margin: 0 0 0.5rem 0; }
-    .result-fraud p { color: #fecaca !important; margin: 0; font-weight: 500; }
-
-    .result-safe {
-        background: linear-gradient(135deg, rgba(52, 211, 153, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
-        border: 1px solid rgba(52, 211, 153, 0.3);
-        border-left: 4px solid #34d399;
-        padding: 1.5rem;
-        border-radius: 12px;
-        margin: 1rem 0;
-    }
-
-    .result-safe h3 { color: #6ee7b7 !important; margin: 0 0 0.5rem 0; }
-    .result-safe p { color: #a7f3d0 !important; margin: 0; font-weight: 500; }
-
-    .section-divider {
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(147, 197, 253, 0.2), transparent);
-        margin: 2rem 0;
-    }
-
-    .stNumberInput label, .stSelectbox label { color: #94a3b8 !important; }
-</style>
-""", unsafe_allow_html=True)
+# Shared mark.dev theme (MODE and accent live in ui_theme.py)
+apply_theme()
 
 st.markdown("""
 <div class="page-header">
@@ -413,8 +293,7 @@ with tab2:
             )
 
 st.markdown("""
-<div style="text-align: center; color: #475569; font-size: 0.8rem; padding: 1.5rem 0;
-            border-top: 1px solid rgba(147, 197, 253, 0.08);">
+<div class="footer-text">
     Predictions powered by XGBoost trained on PaySim and Sparkov datasets
 </div>
 """, unsafe_allow_html=True)
