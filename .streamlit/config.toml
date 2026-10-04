@@ -6,4 +6,27 @@ primaryColor = "#F0655A"
 backgroundColor = "#14110f"
 secondaryBackgroundColor = "#1f1a17"
 textColor = "#f4ede4"
-font = "sans serif"
+linkColor = "#F0655A"
+borderColor = "#2f2823"
+dataframeBorderColor = "#2f2823"
+dataframeHeaderBackgroundColor = "#1a1613"
+dataframeHeaderTextColor = "#9a8c7f"
+codeBackgroundColor = "#1a1613"
+redColor = "#f07167"
+greenColor = "#6fbf73"
+orangeColor = "#e0a445"
+blueColor = "#7fb0e0"
+grayColor = "#7d6f63"
+baseRadius = "0.75rem"
+buttonRadius = "full"
+showWidgetBorder = true
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap, sans-serif"
+headingFont = "Fraunces:https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&display=swap, Georgia, serif"
+codeFont = "JetBrains Mono:https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap, monospace"
+chartCategoricalColors = ["#F0655A", "#b3a595", "#D0564C", "#d9b48f", "#f4ede4", "#7d6f63"]
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

@@ -109,7 +109,7 @@ docker compose up -d
 docker compose --profile serving up -d api      # FastAPI on :8000
 mlflow ui                                        # MLflow UI on :5000
 
-# Streamlit ops dashboard — navigate to the "4 Ops" page
+# Streamlit dashboard: Overview · Score · Screen · Model · Ops (top navigation)
 streamlit run app.py
 
 # DVC pipeline
