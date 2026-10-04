@@ -8,6 +8,27 @@ The point of the project is the operational layer — the split discipline, the 
 
 ---
 
+## Dashboard
+
+A five-page Streamlit app, live on the [Hugging Face Space](https://iambatman07-fraud-detection-mlops.hf.space). No install or sign-in.
+
+![Overview — headline results, the loop, and three transactions scored live](assets/screens/overview.png)
+
+<table>
+<tr>
+<td width="50%"><img src="assets/screens/score.png" alt="Score page"><br><b>Score</b> — one transaction, re-scored as you edit, with the signals the model sees</td>
+<td width="50%"><img src="assets/screens/screen.png" alt="Screen page"><br><b>Screen</b> — score a demo batch or your own CSV and see where the risk sits</td>
+</tr>
+<tr>
+<td width="50%"><img src="assets/screens/model.png" alt="Model page"><br><b>Model</b> — ROC, errors at the 0.50 threshold, feature importance</td>
+<td width="50%"><img src="assets/screens/ops.png" alt="Ops page"><br><b>Ops</b> — drift replay, auto-retrain events, rollback and throughput</td>
+</tr>
+</table>
+
+The demo scores with `models/fraud_model.pkl`, the DVC train-stage model (Sparkov out-of-time AUC 0.795); the tuned 0.952 champion below is not bundled.
+
+---
+
 ## Architecture
 
 ![Architecture — training, registry, and the drift to retrain loop](assets/architecture.png)
