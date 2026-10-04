@@ -117,12 +117,17 @@ def plotly_layout(**overrides) -> dict:
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(family="Inter, -apple-system, Segoe UI, sans-serif", color=p["ink_2"], size=13),
         colorway=colorway(),
-        xaxis=dict(gridcolor=p["line"], linecolor=p["line_strong"], zerolinecolor=p["line"]),
-        yaxis=dict(gridcolor=p["line"], linecolor=p["line_strong"], zerolinecolor=p["line"]),
+        xaxis=dict(gridcolor=p["line"], linecolor=p["line_strong"], zerolinecolor=p["line"], automargin=True),
+        yaxis=dict(gridcolor=p["line"], linecolor=p["line_strong"], zerolinecolor=p["line"], automargin=True),
         legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=p["ink_2"])),
         hoverlabel=dict(bgcolor=p["card"], bordercolor=p["line_strong"], font=dict(color=p["ink"])),
     )
-    layout.update(overrides)
+    for key, value in overrides.items():
+        # axis overrides add to the themed axis instead of replacing it
+        if key in ("xaxis", "yaxis") and isinstance(value, dict):
+            layout[key] = {**layout[key], **value}
+        else:
+            layout[key] = value
     return layout
 
 
@@ -332,37 +337,20 @@ INFO = _status()["info"]
 NEUTRAL = _palette()["neutrals"][0]   # first warm neutral of the colorway
 
 
-def colorscale(n: int = 6) -> list[list]:
-    """``sequential()`` as a plotly colorscale — low values recede into the ground."""
-    steps = sequential(n)
-    return [[i / (len(steps) - 1), c] for i, c in enumerate(steps)]
-
-
 def bar_scale() -> list[list]:
     """Warm neutral -> accent, for bars coloured by value (both ends stay visible)."""
     return [[0.0, NEUTRAL], [1.0, ACCENT]]
 
 
-def ramp(n: int = 5) -> list[str]:
-    """``bar_scale()`` as n discrete colours, for ordered bar categories."""
-    a = [int(NEUTRAL.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
-    b = [int(ACCENT.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
-    return ["#%02x%02x%02x" % tuple(round(a[k] + (b[k] - a[k]) * i / max(n - 1, 1)) for k in range(3))
-            for i in range(n)]
-
-
-def diverging() -> list[list]:
-    """info -> ground -> accent, for correlation matrices centred on zero."""
-    return [[0.0, INFO], [0.5, PAPER_ALT], [1.0, ACCENT]]
-
-
 def components_css() -> str:
-    """SENTINEL's own components, re-expressed in the shared tokens.
+    """SENTINEL's own components, built on the shared tokens.
 
-    The class names are the ones app.py and pages/*.py already emit in their
-    markdown blocks — style hooks only, so they keep their names.
+    Class names are the ones ui_kit.py and views/*.py emit. Layout rules for
+    Streamlit's top navigation and bordered containers live here too, since
+    the shared half above targets the sidebar layout.
     """
     s = _status()
+    tint = _rgba(ACCENT, .12)
     return f"""
 <style>
 :root {{
@@ -370,149 +358,303 @@ def components_css() -> str:
   --warn: {s["warn"]}; --warn-tint: {s["warn_tint"]};
   --bad: {s["bad"]}; --bad-tint: {s["bad_tint"]};
   --info: {s["info"]}; --info-tint: {s["info_tint"]};
+  --neutral: {NEUTRAL};
+  --display: {FONT_DISPLAY}; --mono: {FONT_MONO};
 }}
 
-/* ---- headers -------------------------------------------------------------- */
-.main-header {{ text-align: center; margin-bottom: 2.25rem; padding: 1.5rem 0 .5rem; }}
-.main-header h1 {{
-  font-family: {FONT_DISPLAY} !important; font-weight: 700; font-size: clamp(2.4rem, 5vw, 3.2rem) !important;
-  line-height: 1.05; letter-spacing: -.025em; color: var(--ink) !important;
-  padding: 0 !important; margin-bottom: .5rem;
-}}
-.main-header p {{ color: var(--ink-2); font-size: 1.02rem; }}
+/* ---- shell: top navigation + page width ---------------------------------- */
+[data-testid="stMainBlockContainer"] {{ max-width: 1240px; padding-top: 5.25rem; padding-bottom: 3rem; }}
+[data-testid="stHeader"] {{ border-bottom: 1px solid var(--line); }}
+[data-testid="stHeaderLogo"], [data-testid="stLogo"] {{ height: 2rem; max-width: 11rem; }}
+[data-testid="stTopNavLink"] {{ border-radius: 999px; padding-left: .8rem; padding-right: .8rem; transition: background .2s ease; }}
+[data-testid="stTopNavLink"]:hover {{ background: var(--accent-tint); }}
+[data-testid="stTopNavLink"]:hover span {{ color: var(--accent) !important; }}
+[data-testid="stTopNavLink"][aria-current="page"] {{ background: var(--accent-tint); box-shadow: inset 0 0 0 1px var(--accent-line); }}
+[data-testid="stTopNavLink"][aria-current="page"] span {{ color: var(--accent) !important; font-weight: 600; }}
 
-.page-header {{ padding: .5rem 0 1.75rem; }}
-.page-header h1 {{
-  font-family: {FONT_DISPLAY} !important; font-weight: 700; font-size: clamp(2rem, 4vw, 2.6rem) !important;
-  line-height: 1.07; letter-spacing: -.025em; color: var(--ink) !important;
-  padding: 0 !important; margin-bottom: .35rem;
+/* hero calls to action: page links as pills, the first one filled */
+.st-key-hero_cta {{ gap: .7rem; }}
+.st-key-hero_cta [data-testid="stPageLink-NavLink"] {{
+  border: 1px solid var(--line-strong); border-radius: 999px; padding: .55rem 1.15rem; background: var(--card);
+  transition: border-color .25s ease, background .25s ease, transform .25s ease;
 }}
-.page-header p {{ color: var(--ink-2); }}
+.st-key-hero_cta [data-testid="stPageLink-NavLink"]:hover {{ border-color: var(--accent); background: var(--accent-tint); transform: translateY(-1px); }}
+.st-key-hero_cta [data-testid="stPageLink-NavLink"] p {{ font-weight: 600; }}
+.st-key-hero_cta [data-testid="stElementContainer"]:first-child [data-testid="stPageLink-NavLink"] {{
+  background: var(--accent); border-color: var(--accent); box-shadow: 0 4px 18px {_rgba(ACCENT, .25)};
+}}
+.st-key-hero_cta [data-testid="stElementContainer"]:first-child [data-testid="stPageLink-NavLink"] span,
+.st-key-hero_cta [data-testid="stElementContainer"]:first-child [data-testid="stPageLink-NavLink"] p {{ color: var(--on-accent) !important; }}
+.st-key-hero_cta [data-testid="stElementContainer"]:first-child [data-testid="stPageLink-NavLink"]:hover {{ background: var(--accent-strong); }}
 
-.ops-title {{
-  text-align: center; font-family: {FONT_DISPLAY}; font-weight: 700;
-  font-size: clamp(2rem, 4.4vw, 2.8rem); line-height: 1.06; letter-spacing: -.025em;
-  color: var(--ink); margin-bottom: .3rem;
-}}
-.ops-sub {{ text-align: center; color: var(--ink-2); margin-bottom: 1.75rem; }}
-
-/* ---- KPI tiles (home) ------------------------------------------------------ */
-.kpi-card {{
-  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
-  padding: 1.35rem 1rem; text-align: center; box-shadow: var(--shadow-sm);
-  transition: border-color .3s ease, transform .3s ease, box-shadow .3s ease;
-}}
-.kpi-card:hover {{ border-color: var(--line-strong); transform: translateY(-3px); box-shadow: var(--shadow-md); }}
-.kpi-card .kpi-value {{ font-family: {FONT_DISPLAY}; font-size: 2rem; font-weight: 700; line-height: 1.12; color: var(--accent); }}
-.kpi-card .kpi-label {{
-  font-family: {FONT_MONO}; font-size: .66rem; font-weight: 500; color: var(--ink-3);
-  text-transform: uppercase; letter-spacing: .12em; margin-top: .55rem;
-}}
-.kpi-card .kpi-delta {{ font-family: {FONT_MONO}; font-size: .7rem; color: var(--ok); margin-top: .3rem; }}
-
-/* ---- metric tiles (ops) ---------------------------------------------------- */
-.metric-card {{
-  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
-  padding: 1.1rem 1.25rem; box-shadow: var(--shadow-sm);
-  transition: border-color .3s ease, transform .3s ease, box-shadow .3s ease;
-}}
-.metric-card:hover {{ border-color: var(--line-strong); transform: translateY(-3px); box-shadow: var(--shadow-md); }}
-.metric-card h4 {{
-  font-family: {FONT_MONO} !important; font-size: .66rem !important; font-weight: 600 !important;
-  color: var(--ink-3) !important; text-transform: uppercase; letter-spacing: .12em;
-  padding: 0 !important; margin: 0 0 .45rem !important;
-}}
-.metric-card .value {{ font-family: {FONT_DISPLAY}; color: var(--accent); font-size: 1.65rem; font-weight: 700; line-height: 1.15; }}
-.metric-card .delta {{ color: var(--ok); font-size: .82rem; margin-top: .3rem; line-height: 1.45; }}
-.metric-card .delta.bad {{ color: var(--bad); }}
-
-/* ---- capability cards ------------------------------------------------------ */
-.feature-card {{
-  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
-  padding: 1.5rem 1.4rem; margin-bottom: 1rem; box-shadow: var(--shadow-sm);
-  position: relative; overflow: hidden;
-  transition: border-color .3s ease, transform .3s ease, box-shadow .3s ease;
-}}
-.feature-card::before {{
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: var(--accent); opacity: 0; transition: opacity .3s ease;
-}}
-.feature-card:hover {{ border-color: var(--line-strong); transform: translateY(-3px); box-shadow: var(--shadow-md); }}
-.feature-card:hover::before {{ opacity: 1; }}
-.feature-card h4 {{
-  font-family: {FONT_DISPLAY} !important; font-size: 1.05rem !important; font-weight: 600 !important;
-  color: var(--ink) !important; padding: 0 !important; margin-bottom: .5rem;
-}}
-.feature-card p {{ color: var(--ink-2) !important; font-size: .92rem; line-height: 1.65; margin: 0; }}
-
-/* ---- prediction verdict callouts -------------------------------------------- */
-.result-fraud, .result-safe {{
-  border: 1px solid var(--line); border-radius: 16px;
-  padding: 1.35rem 1.5rem; margin: 1rem 0; box-shadow: var(--shadow-sm);
-}}
-.result-fraud {{ background: var(--bad-tint); border-color: {_rgba(s["bad"], .3)}; border-left: 4px solid var(--bad); }}
-.result-safe {{ background: var(--ok-tint); border-color: {_rgba(s["ok"], .3)}; border-left: 4px solid var(--ok); }}
-.result-fraud h3, .result-safe h3 {{
-  font-family: {FONT_MONO} !important; font-size: .72rem !important; font-weight: 600 !important;
-  text-transform: uppercase; letter-spacing: .14em; padding: 0 !important; margin: 0 0 .55rem !important;
-}}
-.result-fraud h3 {{ color: var(--bad) !important; }}
-.result-safe h3 {{ color: var(--ok) !important; }}
-.result-fraud p, .result-safe p {{ color: var(--ink) !important; margin: 0; font-weight: 500; line-height: 1.6; }}
-
-/* ---- status pill ("System Online") ------------------------------------------ */
-.status-badge {{
-  display: inline-flex; align-items: center; gap: 8px;
-  font-family: {FONT_MONO}; font-size: .66rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .13em;
-  padding: 6px 14px; border-radius: 999px;
-}}
-.status-active {{ background: var(--ok-tint); color: var(--ok); border: 1px solid {_rgba(s["ok"], .3)}; }}
-.status-active::before {{
-  content: ''; width: 7px; height: 7px; border-radius: 50%;
-  background: var(--ok); box-shadow: 0 0 0 3px {_rgba(s["ok"], .2)};
+/* bordered containers read as cards */
+.stApp [class*="st-key-card_"] {{
+  background: var(--card); border-color: var(--line); border-radius: 18px; box-shadow: var(--shadow-sm);
+  padding: 1.1rem 1.25rem 1rem;
 }}
 
-/* ---- sidebar brand + meta blocks -------------------------------------------- */
-.brand-block {{ text-align: center; padding: 1.25rem .5rem .25rem; }}
-.brand-mark {{
-  font-family: {FONT_DISPLAY}; font-style: italic; font-weight: 700;
-  font-size: 2.2rem; line-height: 1; color: var(--accent); margin-bottom: .45rem;
+/* ---- shared text pieces ---------------------------------------------------- */
+.eyebrow {{
+  display: inline-flex; align-items: center; gap: .55rem;
+  font-family: var(--mono); font-size: .68rem; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--accent);
 }}
-.brand-block h2 {{
-  font-family: {FONT_DISPLAY} !important; font-weight: 700 !important; font-size: 1.25rem !important;
-  letter-spacing: .04em; color: var(--ink) !important; padding: 0 !important; margin: 0 !important;
+.pulse {{ width: 8px; height: 8px; border-radius: 50%; background: var(--accent); position: relative; }}
+.pulse::after {{
+  content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid var(--accent);
+  animation: sentinel-pulse 2.4s ease-out infinite;
 }}
-.brand-block p {{
-  font-family: {FONT_MONO}; font-size: .6rem; font-weight: 500; color: var(--ink-3) !important;
-  text-transform: uppercase; letter-spacing: .16em; margin: .4rem 0 0 !important;
-}}
-.side-block {{ padding: 0 .5rem; }}
-.side-block .side-label {{
-  font-family: {FONT_MONO}; font-size: .62rem; font-weight: 600; color: var(--accent);
-  text-transform: uppercase; letter-spacing: .14em; margin-bottom: .6rem;
-}}
-.side-block .side-list {{ color: var(--ink-2); font-size: .84rem; line-height: 1.95; margin: 0; }}
+@keyframes sentinel-pulse {{ 0% {{ transform: scale(.6); opacity: .9; }} 100% {{ transform: scale(2.2); opacity: 0; }} }}
+@media (prefers-reduced-motion: reduce) {{ .pulse::after {{ animation: none; }} }}
+.stApp .fine {{ color: var(--ink-3); font-size: .84rem; line-height: 1.6; margin: .6rem 0 0; }}
+.stApp .fine b {{ color: var(--ink-2); font-weight: 600; }}
+.stApp .prose p {{ color: var(--ink-2); font-size: 1rem; line-height: 1.75; margin: 0 0 1rem; }}
+.prose b {{ color: var(--ink); font-weight: 600; }}
+.stApp em {{ font-style: italic; color: var(--accent); }}
 
-/* ---- markdown tables: mono column heads on the line colour ------------------- */
-[data-testid="stMarkdownContainer"] table {{ border-collapse: collapse; }}
-[data-testid="stMarkdownContainer"] th {{
-  font-family: {FONT_MONO}; font-size: .66rem; font-weight: 600; color: var(--ink-3);
-  text-transform: uppercase; letter-spacing: .12em; background: var(--paper-alt);
+/* ---- hero (overview) -------------------------------------------------------- */
+.hero {{ padding: .5rem 0 .25rem; }}
+.hero-title {{
+  font-family: var(--display) !important; font-weight: 600 !important; font-size: clamp(2.6rem, 5.4vw, 4.2rem) !important;
+  line-height: 1.02 !important; letter-spacing: -.035em; color: var(--ink) !important; margin: 1rem 0 1.1rem !important; padding: 0 !important;
 }}
-[data-testid="stMarkdownContainer"] th, [data-testid="stMarkdownContainer"] td {{ border-color: var(--line); }}
-[data-testid="stMarkdownContainer"] td {{ color: var(--ink-2); }}
-[data-testid="stMarkdownContainer"] td strong {{ color: var(--ink); }}
+.hero-title em {{ font-weight: 500; }}
+.stApp .hero-lede {{ color: var(--ink-2); font-size: 1.08rem; line-height: 1.7; max-width: 38rem; margin: 0 0 1.4rem; }}
 
-/* ---- rules and footers ------------------------------------------------------ */
-.section-divider {{
-  height: 1px; border: 0; margin: 2rem 0;
-  background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+.live-card {{
+  background: linear-gradient(165deg, {tint}, var(--card) 55%); border: 1px solid var(--line);
+  border-radius: 20px; padding: 1.2rem 1.3rem .6rem; box-shadow: var(--shadow-md);
 }}
-.footer-text {{
-  text-align: center; border-top: 1px solid var(--line); padding: 1.5rem 0 .5rem;
-  font-family: {FONT_MONO}; font-size: .64rem; font-weight: 500; color: var(--ink-3);
-  text-transform: uppercase; letter-spacing: .12em;
+.live-head {{ display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .3rem 1rem; margin-bottom: .6rem; }}
+.live-head .eyebrow {{ white-space: nowrap; }}
+.live-tag {{ font-family: var(--mono); font-size: .62rem; letter-spacing: .08em; color: var(--ink-3); text-transform: uppercase; }}
+.live-row {{
+  display: grid; grid-template-columns: 1fr auto; gap: .2rem 1rem; align-items: center;
+  padding: .85rem 0 .9rem; border-top: 1px solid var(--line);
+}}
+.live-name {{ font-family: var(--display); font-weight: 600; font-size: 1.05rem; color: var(--ink); }}
+.live-desc {{ color: var(--ink-3); font-size: .8rem; margin-top: .1rem; }}
+.live-score {{ font-family: var(--display); font-weight: 600; font-size: 1.5rem; text-align: right; line-height: 1; }}
+.live-score span {{ display: block; font-family: var(--mono); font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; margin-top: .3rem; }}
+.live-row.is-flag .live-score {{ color: var(--accent); }}
+.live-row.is-clear .live-score {{ color: var(--ok); }}
+.live-bar {{ grid-column: 1 / -1; height: 4px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: .45rem; }}
+.live-bar i {{ display: block; height: 100%; border-radius: 99px; background: var(--neutral); }}
+.live-row.is-flag .live-bar i {{ background: linear-gradient(90deg, var(--accent-soft), var(--accent)); }}
+.live-row.is-clear .live-bar i {{ background: var(--ok); }}
+
+/* ---- page + section headers ---------------------------------------------------- */
+.ph {{ margin: .25rem 0 1.6rem; }}
+.ph-title {{
+  font-family: var(--display) !important; font-weight: 600 !important; font-size: clamp(2.2rem, 4.2vw, 3.1rem) !important;
+  line-height: 1.05 !important; letter-spacing: -.03em; color: var(--ink) !important; margin: .7rem 0 .55rem !important; padding: 0 !important;
+}}
+.ph-title em {{ font-weight: 500; }}
+.stApp .ph-lede {{ color: var(--ink-2); font-size: 1.02rem; line-height: 1.65; max-width: 46rem; margin: 0; }}
+
+.sec {{ margin: 3.2rem 0 1.1rem; }}
+.sec-index {{
+  display: flex; align-items: center; gap: .8rem; font-family: var(--mono); font-size: .68rem; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--accent);
+}}
+.sec-index::after {{ content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line-strong), transparent); }}
+.sec-title {{
+  font-family: var(--display) !important; font-weight: 600 !important; font-size: clamp(1.5rem, 2.6vw, 1.95rem) !important;
+  letter-spacing: -.02em; color: var(--ink) !important; margin: .55rem 0 .35rem !important; padding: 0 !important;
+}}
+.stApp .sec-sub {{ color: var(--ink-2); font-size: .95rem; line-height: 1.6; max-width: 52rem; margin: 0; }}
+
+.card-head {{ margin: .1rem 0 .5rem; }}
+.card-title {{ font-family: var(--display); font-weight: 600; font-size: 1.12rem; color: var(--ink); margin-top: .3rem; letter-spacing: -.01em; }}
+
+/* ---- stat tiles ---------------------------------------------------------------------- */
+.stat-grid {{ display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 14px; margin: 1.6rem 0 1.1rem; }}
+.stat {{
+  position: relative; overflow: hidden; background: var(--card); border: 1px solid var(--line);
+  border-radius: 16px; padding: 1.05rem 1.15rem 1.1rem; box-shadow: var(--shadow-sm);
+  transition: border-color .3s ease, transform .3s ease;
+}}
+.stat::before {{
+  content: ''; position: absolute; top: 0; left: 0; width: 46%; height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}}
+.stat-ink::before {{ background: linear-gradient(90deg, var(--line-strong), transparent); }}
+.stat:hover {{ border-color: var(--line-strong); transform: translateY(-2px); }}
+.stat-label {{ font-family: var(--mono); font-size: .64rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }}
+.stat-value {{
+  font-family: var(--display); font-weight: 600; font-size: clamp(1.7rem, 1.2rem + 1.2vw, 2.3rem);
+  line-height: 1.1; color: var(--accent); margin-top: .45rem; letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+}}
+.stat-ink .stat-value {{ color: var(--ink); }}
+.stat-ok .stat-value {{ color: var(--ok); }}
+.stat-unit {{ font-family: var(--mono); font-size: .78rem; font-weight: 500; color: var(--ink-3); margin-left: .35rem; letter-spacing: .02em; }}
+.stat-foot {{ color: var(--ink-2); font-size: .82rem; line-height: 1.5; margin-top: .4rem; }}
+
+/* ---- callouts ------------------------------------------------------------------------- */
+.callout {{
+  background: var(--paper-alt); border: 1px solid var(--line); border-left: 3px solid var(--line-strong);
+  border-radius: 12px; padding: .9rem 1.1rem; margin: .6rem 0 1rem;
+}}
+.callout-title {{ font-family: var(--mono); font-size: .64rem; font-weight: 600; letter-spacing: .13em; text-transform: uppercase; color: var(--accent); margin-bottom: .35rem; }}
+.callout-body {{ color: var(--ink-2); font-size: .92rem; line-height: 1.65; }}
+.callout-body b {{ color: var(--ink); font-weight: 600; }}
+.callout-info {{ border-left-color: var(--accent); }}
+.callout-warn {{ border-left-color: var(--warn); background: var(--warn-tint); }}
+.callout-bad {{ border-left-color: var(--bad); background: var(--bad-tint); }}
+
+/* ---- the loop (overview) ------------------------------------------------------------------ */
+.flow {{ list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }}
+.stApp .flow > li.flow-step {{
+  position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  padding: 1rem 1.1rem 1.1rem; margin: 0; box-shadow: var(--shadow-sm);
+}}
+.flow-step::after {{
+  content: '→'; position: absolute; right: -13px; top: 50%; transform: translateY(-50%);
+  font-family: var(--mono); font-size: .8rem; color: var(--line-strong); z-index: 1;
+}}
+.flow-step:nth-child(4n)::after, .flow-step:last-child::after {{ content: none; }}
+.flow-step.is-loop {{ border-color: var(--accent-line); background: linear-gradient(160deg, {tint}, var(--card) 70%); }}
+.flow-n {{ font-family: var(--mono); font-size: .66rem; font-weight: 600; color: var(--accent); letter-spacing: .1em; }}
+.flow-t {{ display: block; font-family: var(--display); font-weight: 600; font-size: 1.08rem; color: var(--ink); margin: .35rem 0 .3rem; }}
+.flow-d {{ display: block; color: var(--ink-2); font-size: .85rem; line-height: 1.55; }}
+.flow-note {{ font-family: var(--mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-top: .8rem; }}
+
+/* ---- specialist vs LLM (overview) ------------------------------------------------------------ */
+.vs {{ background: var(--card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; box-shadow: var(--shadow-sm); }}
+.vs-row {{
+  display: grid; grid-template-columns: 1.25fr 2fr .8fr .9fr; gap: 1.2rem; align-items: center;
+  padding: 1rem 1.3rem; border-top: 1px solid var(--line);
+}}
+.vs-row:first-child {{ border-top: 0; }}
+.vs-row.is-champ {{ background: {_rgba(ACCENT, .07)}; }}
+.vs-name {{ font-family: var(--display); font-weight: 600; font-size: 1.02rem; color: var(--ink); }}
+.vs-row.is-champ .vs-name {{ color: var(--accent); }}
+.vs-metric {{ display: flex; align-items: center; gap: .8rem; }}
+.vs-metric span {{ font-family: var(--mono); font-size: .72rem; color: var(--ink-2); white-space: nowrap; }}
+.vs-bar {{ flex: 1; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }}
+.vs-bar i {{ display: block; height: 100%; border-radius: 99px; background: var(--neutral); }}
+.vs-row.is-champ .vs-bar i {{ background: linear-gradient(90deg, var(--accent-soft), var(--accent)); }}
+.vs-num b {{ display: block; font-family: var(--display); font-weight: 600; font-size: 1.1rem; color: var(--ink); font-variant-numeric: tabular-nums; }}
+.vs-num span {{ font-family: var(--mono); font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }}
+
+/* ---- chips + footer -------------------------------------------------------------------------- */
+.chips {{ display: flex; flex-wrap: wrap; gap: 8px; }}
+.chip {{
+  font-family: var(--mono); font-size: .7rem; font-weight: 500; color: var(--ink-2); background: var(--card);
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 13px;
+}}
+.pg-foot {{
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
+  border-top: 1px solid var(--line); margin-top: 3.5rem; padding: 1.2rem 0 .3rem;
+  font-family: var(--mono); font-size: .62rem; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+}}
+.pg-foot code {{ font-size: .95em; }}
+.pg-foot a {{ color: var(--accent) !important; text-decoration: none; }}
+.pg-foot a:hover {{ color: var(--accent-strong) !important; }}
+
+/* ---- verdict (score) ------------------------------------------------------------------------ */
+.verdict {{ border: 1px solid var(--line); border-radius: 20px; padding: 1.35rem 1.5rem 1.25rem; box-shadow: var(--shadow-md); }}
+.verdict.is-flag {{ background: linear-gradient(160deg, {_rgba(ACCENT, .18)}, var(--card) 62%); border-color: var(--accent-line); }}
+.verdict.is-clear {{ background: linear-gradient(160deg, {_rgba(s["ok"], .14)}, var(--card) 62%); border-color: {_rgba(s["ok"], .3)}; }}
+.v-top {{ display: flex; justify-content: space-between; align-items: center; gap: 1rem; }}
+.v-pill {{
+  font-family: var(--mono); font-size: .62rem; font-weight: 600; letter-spacing: .13em; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 999px;
+}}
+.is-flag .v-pill {{ background: var(--accent); color: var(--on-accent); }}
+.is-clear .v-pill {{ background: var(--ok-tint); color: var(--ok); border: 1px solid {_rgba(s["ok"], .35)}; }}
+.v-prob {{
+  font-family: var(--display); font-weight: 600; font-size: clamp(3.6rem, 7vw, 5.4rem); line-height: 1;
+  letter-spacing: -.04em; margin: .9rem 0 1.1rem; font-variant-numeric: tabular-nums;
+}}
+.is-flag .v-prob {{ color: var(--accent); }}
+.is-clear .v-prob {{ color: var(--ok); }}
+.v-prob span {{ font-size: .42em; color: var(--ink-3); margin-left: .15rem; letter-spacing: 0; }}
+.meter {{ position: relative; height: 10px; border-radius: 99px; background: var(--line); }}
+.meter i {{ position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; transition: width .4s ease; }}
+.is-flag .meter i {{ background: linear-gradient(90deg, var(--neutral), var(--accent)); }}
+.is-clear .meter i {{ background: var(--ok); }}
+.meter b {{ position: absolute; top: -6px; width: 2px; height: 22px; margin-left: -1px; background: var(--ink); border-radius: 2px; }}
+.v-scale {{ display: flex; justify-content: space-between; font-family: var(--mono); font-size: .6rem; color: var(--ink-3); margin-top: .55rem; letter-spacing: .04em; }}
+.stApp .v-note {{ color: var(--ink-2); font-size: .9rem; line-height: 1.6; margin: 1rem 0 0; }}
+
+.signals {{ background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 1.1rem 1.3rem 1rem; margin-top: 1rem; box-shadow: var(--shadow-sm); }}
+.signals dl {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem 1.2rem; margin: .8rem 0 0; }}
+.signals dt {{ font-family: var(--mono); font-size: .6rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }}
+.signals dd {{ font-family: var(--display); font-weight: 600; font-size: 1.22rem; color: var(--ink); margin: .2rem 0 .1rem; font-variant-numeric: tabular-nums; }}
+.signals small {{ color: var(--ink-3); font-size: .74rem; }}
+
+/* ---- confusion matrix (model) ------------------------------------------------------------------ */
+.cm {{ display: grid; grid-template-columns: auto 1fr 1fr; gap: 8px; align-items: stretch; margin-top: .4rem; }}
+.cm-axis {{ grid-column: 1 / -1; text-align: right; font-family: var(--mono); font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }}
+.cm-head {{ font-family: var(--mono); font-size: .6rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); text-align: center; }}
+.cm-side {{ display: flex; align-items: center; justify-content: flex-end; padding-right: .3rem; font-family: var(--mono); font-size: .6rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }}
+.cm-cell {{ border: 1px solid var(--line); border-radius: 14px; padding: .85rem .95rem; background: var(--paper-alt); }}
+.cm-cell b {{ display: block; font-family: var(--display); font-weight: 600; font-size: 1.45rem; color: var(--ink); font-variant-numeric: tabular-nums; }}
+.cm-cell span {{ display: block; color: var(--ink); font-size: .82rem; font-weight: 500; margin-top: .15rem; }}
+.cm-cell small {{ color: var(--ink-3); font-size: .74rem; }}
+.cm-tp {{ background: var(--ok-tint); border-color: {_rgba(s["ok"], .3)}; }}
+.cm-tp b {{ color: var(--ok); }}
+.cm-fn {{ background: var(--bad-tint); border-color: {_rgba(s["bad"], .3)}; }}
+.cm-fn b {{ color: var(--bad); }}
+.cm-fp {{ background: var(--warn-tint); border-color: {_rgba(s["warn"], .28)}; }}
+.cm-fp b {{ color: var(--warn); }}
+
+/* ---- drift days, retrain events, scoreboard (ops) ------------------------------------------------ */
+.days {{ display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); gap: 4px; margin: .4rem 0 0; }}
+.day {{ height: 40px; border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; border: 1px solid var(--line); background: var(--paper-alt); }}
+.day span {{ font-family: var(--mono); font-size: .58rem; color: var(--ink-3); }}
+.day-hit {{ background: var(--accent); border-color: var(--accent); }}
+.day-hit span {{ color: var(--on-accent); font-weight: 600; }}
+.day-miss {{ background: var(--bad-tint); border: 1px dashed var(--bad); }}
+.day-false {{ background: var(--warn-tint); border-color: var(--warn); }}
+.days-legend {{ display: flex; flex-wrap: wrap; gap: .5rem 1.3rem; margin: .7rem 0 1.1rem; font-family: var(--mono); font-size: .6rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }}
+.days-legend span {{ display: inline-flex; align-items: center; gap: .45rem; }}
+.days-legend i {{ width: 11px; height: 11px; border-radius: 3px; border: 1px solid var(--line); background: var(--paper-alt); }}
+.days-legend i.day-hit {{ background: var(--accent); border-color: var(--accent); }}
+.days-legend i.day-miss {{ background: var(--bad-tint); border: 1px dashed var(--bad); }}
+.days-legend i.day-false {{ background: var(--warn-tint); border-color: var(--warn); }}
+
+.events {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 1rem; }}
+.event {{ background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 1rem 1.15rem .9rem; box-shadow: var(--shadow-sm); }}
+.event-top {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem; }}
+.event-pill {{ font-family: var(--mono); font-size: .6rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }}
+.event-pill.ok {{ background: var(--ok-tint); color: var(--ok); border: 1px solid {_rgba(s["ok"], .3)}; }}
+.event-pill.bad {{ background: var(--bad-tint); color: var(--bad); border: 1px solid {_rgba(s["bad"], .3)}; }}
+.event-row {{ display: grid; grid-template-columns: 3.4rem 1fr 3.2rem; gap: .7rem; align-items: center; margin: .35rem 0; }}
+.event-row span {{ font-family: var(--mono); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }}
+.event-row b {{ font-family: var(--mono); font-size: .8rem; font-weight: 600; color: var(--ink); text-align: right; }}
+.event-bar {{ height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }}
+.event-bar i {{ display: block; height: 100%; border-radius: 99px; background: var(--neutral); }}
+.event-bar.is-new i {{ background: linear-gradient(90deg, var(--accent-soft), var(--accent)); }}
+.event-foot {{ display: flex; justify-content: space-between; align-items: baseline; gap: .8rem; border-top: 1px solid var(--line); margin-top: .8rem; padding-top: .7rem; }}
+.event-foot span {{ color: var(--ink-3); font-size: .76rem; }}
+.event-foot b {{ font-family: var(--display); font-weight: 600; font-size: 1.2rem; color: var(--accent); white-space: nowrap; }}
+
+.board {{ width: 100%; border-collapse: separate; border-spacing: 0; background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-sm); }}
+.board th {{ font-family: var(--mono); font-size: .6rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); background: var(--paper-alt); padding: .75rem .95rem; text-align: left; border: 0; }}
+.board td {{ padding: .8rem .95rem; border: 0; border-top: 1px solid var(--line); color: var(--ink-2); font-size: .88rem; line-height: 1.45; vertical-align: top; }}
+.board .num {{ text-align: right; font-family: var(--mono); font-size: .8rem; font-variant-numeric: tabular-nums; white-space: nowrap; }}
+.board td.delta {{ color: var(--ok); }}
+.board .layer {{ display: inline-block; font-family: var(--mono); font-size: .6rem; font-weight: 600; color: var(--accent); background: var(--accent-tint); border: 1px solid var(--accent-line); border-radius: 6px; padding: 1px 6px; margin-right: .55rem; }}
+.board tr.is-champ td {{ color: var(--ink); background: {_rgba(ACCENT, .07)}; }}
+.board tr.is-champ td:first-child {{ color: var(--accent); font-weight: 600; }}
+
+/* ---- responsive --------------------------------------------------------------------------------- */
+@media (max-width: 900px) {{
+  .stat-grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+  .flow {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+  .flow-step::after {{ content: none; }}
+  .events {{ grid-template-columns: 1fr; }}
+  .days {{ grid-template-columns: repeat(15, minmax(0, 1fr)); }}
+  .vs-row {{ grid-template-columns: 1fr 1fr; }}
+  .vs-metric {{ grid-column: 1 / -1; order: 3; }}
+}}
+@media (max-width: 520px) {{
+  .stat-grid, .flow {{ grid-template-columns: 1fr; }}
+  .days {{ grid-template-columns: repeat(10, minmax(0, 1fr)); }}
+  .signals dl {{ grid-template-columns: 1fr; }}
+  [data-testid="stMainBlockContainer"] {{ padding-left: 1rem; padding-right: 1rem; }}
 }}
 </style>
 """
