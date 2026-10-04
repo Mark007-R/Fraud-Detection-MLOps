@@ -31,7 +31,9 @@ dask[dataframe]>=2024.12
 fastapi>=0.115,<0.120
 uvicorn[standard]>=0.34,<0.40
 pydantic>=2.5,<3
-sqlalchemy>=2,<3
+# <2.1: SQLAlchemy 2.1 dropped FallbackAsyncAdaptedQueuePool, which mlflow 2.x
+# imports when it opens the sqlite tracking store (tests/test_registry.py).
+sqlalchemy>=2,<2.1
 # psycopg2-binary is required for the Postgres backing store (docker-compose
 # service). On laptops without Postgres, the telemetry layer transparently
 # falls back to sqlite — the dependency is optional in that path.
